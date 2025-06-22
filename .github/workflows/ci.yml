@@ -1,0 +1,162 @@
+# ------------------------------------------------------------------------------
+# .NET CI Workflow
+#
+# Purpose:
+#   A secure, optimized CI pipeline for the .NET Tic Tac Toe microservices project.
+#   Automatically validates every pull request and push to main/master branches
+#   through comprehensive security scanning, building, testing, and reporting.
+#
+# Security Features:
+#   - Dependency vulnerability scanning using GitHub's dependency-review-action
+#   - Secrets detection and prevention using TruffleHog
+#   - Container vulnerability scanning (if containers are present)
+#   - Principle of Least Privilege token permissions
+#   - Early security validation before build process
+#
+# Performance Features:
+#   - Intelligent NuGet package caching for faster builds
+#   - Unified test execution (unit + integration) for efficiency
+#   - Incremental builds with --no-restore optimization
+#
+# Quality Features:
+#   - Code coverage collection with XPlat Code Coverage
+#   - Static code analysis and quality gates
+#   - Rich test result reporting in pull request interface
+#   - Detailed artifacts for debugging and analysis
+#   - 7-day artifact retention for post-analysis
+#
+# Workflow Steps:
+#   1. Checkout: Retrieve source code from repository
+#   2. Security Scan: Check dependencies for vulnerabilities
+#   3. Secrets Scan: Detect hardcoded secrets and credentials
+#   4. Container Scan: Scan for container vulnerabilities (if applicable)
+#   5. Setup: Configure .NET 9.0.x environment
+#   6. Cache: Restore NuGet packages from cache
+#   7. Restore: Download missing dependencies
+#   8. Build: Compile solution in Release configuration
+#   9. Quality Scan: Run static code analysis and quality checks
+#   10. Test: Execute all tests with coverage collection
+#   11. Report: Publish test results to PR interface
+#   12. Artifacts: Upload detailed reports for download
+# ------------------------------------------------------------------------------
+name: .NET CI
+
+on:
+  pull_request:
+    branches: [ "main", "master" ]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - '**.sln'
+      - '**.csproj'
+      - '.github/workflows/ci.yml'
+  push:
+    branches: [ "main", "master" ]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - '**.sln'
+      - '**.csproj'
+      - '.github/workflows/ci.yml'
+
+jobs:
+  build-and-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+
+    # SECURITY BEST PRACTICE: Restrict permissions for the GITHUB_TOKEN.
+    permissions:
+      contents: read      # Allow checkout
+      pull-requests: read # Allow PR-based actions (like dependency-review)
+      checks: write       # Allow test-reporter to publish a check
+      actions: read       # Allow discovering actions
+      security-events: write # Allow security scanning results
+
+    steps:
+      # STEP 1: Retrieve source code from the repository
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # STEP 2: Security validation - scan for vulnerable dependencies
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4
+
+      # STEP 3: Secrets detection - scan for hardcoded secrets and credentials
+      - name: Run TruffleHog
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: .
+          base: ${{ github.event.pull_request.base.sha || github.sha }}
+          head: ${{ github.sha }}
+
+      # STEP 4: Container vulnerability scanning (if Dockerfiles are present)
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      # STEP 5: Configure .NET 9.0.x development environment
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      # STEP 6: Performance optimization - restore NuGet packages from cache
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json', '**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      # STEP 7: Download project dependencies from NuGet
+      - name: Restore dependencies
+        run: dotnet restore
+
+      # STEP 8: Compile the solution in Release configuration
+      - name: Build solution
+        run: dotnet build --no-restore --configuration Release
+
+      # STEP 9: Code quality and security analysis
+      - name: Run Security Analysis
+        run: dotnet list package --vulnerable
+
+      # STEP 10: Execute all tests and collect code coverage metrics
+      - name: Run tests with coverage
+        run: >
+          dotnet test --no-build --configuration Release
+          --collect:"XPlat Code Coverage"
+          --results-directory ./test-results/
+          --logger "trx;LogFileName=test-results.trx"
+
+      # STEP 11: Publish test results to pull request interface
+      - name: Publish Test Results
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: Test Results
+          path: ./test-results/test-results.trx
+          reporter: dotnet-trx
+
+      # STEP 12: Upload detailed reports and coverage data for analysis
+      - name: Upload test & coverage artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-and-coverage-results
+          path: |
+            ./test-results/
+            trivy-results.sarif
+          retention-days: 7
+
+      # STEP 13: Upload Trivy scan results to GitHub Security tab
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif' 
