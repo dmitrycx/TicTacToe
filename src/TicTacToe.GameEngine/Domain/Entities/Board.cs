@@ -13,6 +13,34 @@ public class Board
         _cells = new Player?[3, 3];
     }
 
+    /// <summary>
+    /// Creates a Board from a string representation (List<List<string?>>).
+    /// </summary>
+    /// <param name="boardState">The board state as a jagged array of strings.</param>
+    /// <returns>A new Board instance with the specified state.</returns>
+    public static Board FromStringRepresentation(List<List<string?>> boardState)
+    {
+        var board = new Board();
+        
+        for (int row = 0; row < 3 && row < boardState.Count; row++)
+        {
+            var rowList = boardState[row];
+            for (int col = 0; col < 3 && col < rowList.Count; col++)
+            {
+                var cellValue = rowList[col];
+                if (!string.IsNullOrEmpty(cellValue))
+                {
+                    if (Enum.TryParse<Player>(cellValue, out var player))
+                    {
+                        board.SetCell(new Position(row, col), player);
+                    }
+                }
+            }
+        }
+        
+        return board;
+    }
+
     public bool IsEmpty()
     {
         for (int row = 0; row < 3; row++)
@@ -32,6 +60,16 @@ public class Board
         return !_cells[position.Row, position.Column].HasValue;
     }
 
+    /// <summary>
+    /// Alias for IsCellEmpty to maintain compatibility with GameSession API.
+    /// </summary>
+    /// <param name="position">The position to check.</param>
+    /// <returns>True if the position is empty; otherwise, false.</returns>
+    public bool IsPositionEmpty(Position position)
+    {
+        return IsCellEmpty(position);
+    }
+
     public Player? GetCell(Position position)
     {
         ValidatePosition(position);
@@ -42,6 +80,16 @@ public class Board
     {
         ValidatePosition(position);
         _cells[position.Row, position.Column] = player;
+    }
+
+    /// <summary>
+    /// Alias for SetCell to maintain compatibility with GameSession API.
+    /// </summary>
+    /// <param name="position">The position to set.</param>
+    /// <param name="player">The player to place at the position.</param>
+    public void MakeMove(Position position, Player player)
+    {
+        SetCell(position, player);
     }
 
     public bool IsFull()
