@@ -8,7 +8,17 @@ public record CreateSessionResponse(Guid SessionId, string Status);
 /// <summary>
 /// Response DTO for getting a session.
 /// </summary>
-public record GetSessionResponse(Guid SessionId, string Status, List<MoveInfo> Moves, string? Winner);
+public record GetSessionResponse(
+    Guid SessionId, 
+    Guid GameId,
+    string Status, 
+    DateTime CreatedAt,
+    DateTime? StartedAt,
+    DateTime? CompletedAt,
+    List<MoveInfo> Moves, 
+    string? Winner,
+    string? Result
+);
 
 /// <summary>
 /// Response DTO for game simulation.

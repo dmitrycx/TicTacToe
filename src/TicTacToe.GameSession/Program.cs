@@ -4,6 +4,7 @@ using Polly.Extensions.Http;
 using FastEndpoints;
 using FastEndpoints.Swagger;
 using System.Text.Json.Serialization;
+using TicTacToe.GameSession.Domain.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,6 +26,11 @@ builder.Services.AddOptions<GameEngineSettings>()
 
 // Infrastructure Services
 builder.Services.AddSingleton<IGameSessionRepository, InMemoryGameSessionRepository>();
+
+// Move Generation Services
+builder.Services.AddSingleton<IMoveGenerator, RandomMoveGenerator>();
+builder.Services.AddSingleton<IMoveGenerator, RuleBasedMoveGenerator>();
+builder.Services.AddSingleton<IMoveGeneratorFactory, MoveGeneratorFactory>();
 
 // HTTP Client with Resilience (Polly)
 builder.Services.AddHttpClient<IGameEngineApiClient, GameEngineHttpClient>((serviceProvider, client) =>

@@ -41,9 +41,14 @@ public abstract class GetSessionEndpointBase(IGameSessionRepository repository)
 
         var response = new GetSessionResponse(
             session.Id,
+            session.GameId,
             session.Status.ToString(),
+            session.CreatedAt,
+            session.StartedAt,
+            session.CompletedAt,
             session.Moves.Select(m => new MoveInfo(m.Position.Row, m.Position.Column, m.Player.ToString())).ToList(),
-            session.Winner?.ToString()
+            session.Winner?.ToString(),
+            session.Result?.ToString()
         );
 
         await SendAsync(response, 200, ct);

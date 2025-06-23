@@ -9,6 +9,7 @@ using TicTacToe.GameSession.Infrastructure.External.DTOs;
 using TicTacToe.GameSession.Endpoints.DTOs;
 using TicTacToe.GameSession.Domain.Constants;
 using TicTacToe.GameSession.Infrastructure.Persistence;
+using System.Text.Json;
 
 namespace TicTacToe.GameSession.IntegrationTests;
 
@@ -59,6 +60,22 @@ public class SessionEndpointsTests : IClassFixture<WebApplicationFactory<Program
         // Mock CreateGameAsync to return a valid game ID
         _mockGameEngine.Setup(x => x.CreateGameAsync())
             .ReturnsAsync(new CreateGameResponse(gameId, DateTime.UtcNow));
+        
+        // Mock GetGameStateAsync to return initial game state
+        _mockGameEngine.Setup(x => x.GetGameStateAsync(It.IsAny<Guid>()))
+            .ReturnsAsync(new GameStateResponse(
+                gameId,
+                SessionConstants.Status.InProgress,
+                "X",
+                null,
+                [
+                    new List<string?> { null, null, null },
+                    new List<string?> { null, null, null },
+                    new List<string?> { null, null, null }
+                ],
+                DateTime.UtcNow,
+                null
+            ));
         
         // Mock MakeMoveAsync to return a completed game state
         _mockGameEngine.Setup(x => x.MakeMoveAsync(It.IsAny<Guid>(), It.IsAny<MakeMoveRequest>()))
@@ -117,6 +134,22 @@ public class SessionEndpointsTests : IClassFixture<WebApplicationFactory<Program
         // Mock CreateGameAsync to return a valid game ID
         _mockGameEngine.Setup(x => x.CreateGameAsync())
             .ReturnsAsync(new CreateGameResponse(gameId, DateTime.UtcNow));
+        
+        // Mock GetGameStateAsync to return initial game state
+        _mockGameEngine.Setup(x => x.GetGameStateAsync(It.IsAny<Guid>()))
+            .ReturnsAsync(new GameStateResponse(
+                gameId,
+                SessionConstants.Status.InProgress,
+                "X",
+                null,
+                [
+                    new List<string?> { null, null, null },
+                    new List<string?> { null, null, null },
+                    new List<string?> { null, null, null }
+                ],
+                DateTime.UtcNow,
+                null
+            ));
         
         // Simplified mock: return a completed game state immediately
         // This focuses the test on the "already completed" scenario without
@@ -192,5 +225,102 @@ public class SessionEndpointsTests : IClassFixture<WebApplicationFactory<Program
         Assert.NotNull(getResult);
         Assert.Equal(createResult.SessionId, getResult.SessionId);
         Assert.Equal(SessionConstants.Status.Created, getResult.Status);
+        Assert.Equal(Guid.Empty, getResult.GameId); // Game ID should be empty initially
+        Assert.NotNull(getResult.CreatedAt);
+        Assert.Null(getResult.StartedAt);
+        Assert.Null(getResult.CompletedAt);
+        Assert.Empty(getResult.Moves);
+        Assert.Null(getResult.Winner);
+        Assert.Null(getResult.Result);
+    }
+
+    [Fact]
+    public async Task ListSessions_WhenCalled_ReturnsAllSessions()
+    {
+        // Arrange - Create multiple sessions
+        var createResponse1 = await _client.PostAsync("/sessions", null);
+        var createResponse2 = await _client.PostAsync("/sessions", null);
+        
+        Assert.Equal(HttpStatusCode.Created, createResponse1.StatusCode);
+        Assert.Equal(HttpStatusCode.Created, createResponse2.StatusCode);
+
+        // Get the session IDs
+        var createResult1 = await createResponse1.Content.ReadFromJsonAsync<CreateSessionResponse>();
+        var createResult2 = await createResponse2.Content.ReadFromJsonAsync<CreateSessionResponse>();
+        Assert.NotNull(createResult1);
+        Assert.NotNull(createResult2);
+
+        // Act
+        var response = await _client.GetAsync("/sessions");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        
+        // Use System.Text.Json syntax for property access
+        var jsonDocument = await response.Content.ReadFromJsonAsync<JsonDocument>();
+        Assert.NotNull(jsonDocument);
+        
+        var root = jsonDocument!.RootElement;
+        Assert.True(root.TryGetProperty("sessions", out var sessionsArray));
+        Assert.True(sessionsArray.GetArrayLength() >= 2);
+        
+        // Verify our created sessions are in the list
+        var sessionIds = new List<Guid>();
+        foreach (var session in sessionsArray.EnumerateArray())
+        {
+            if (session.TryGetProperty("sessionId", out var sessionIdElement))
+            {
+                sessionIds.Add(sessionIdElement.GetGuid());
+            }
+        }
+        
+        Assert.Contains(createResult1!.SessionId, sessionIds);
+        Assert.Contains(createResult2!.SessionId, sessionIds);
+    }
+
+    [Fact]
+    public async Task DeleteSession_ExistingSession_ShouldReturnSuccess()
+    {
+        // Arrange - Create a session
+        var createResponse = await _client.PostAsync("/sessions", null);
+        Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
+        
+        var createResult = await createResponse.Content.ReadFromJsonAsync<CreateSessionResponse>();
+        Assert.NotNull(createResult);
+
+        // Act
+        var response = await _client.DeleteAsync($"/sessions/{createResult.SessionId}");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        
+        // Use System.Text.Json syntax for property access
+        var jsonDocument = await response.Content.ReadFromJsonAsync<JsonDocument>();
+        Assert.NotNull(jsonDocument);
+        
+        var root = jsonDocument!.RootElement;
+        Assert.True(root.TryGetProperty("success", out var successElement));
+        Assert.True(successElement.GetBoolean());
+        
+        Assert.True(root.TryGetProperty("message", out var messageElement));
+        var message = messageElement.GetString();
+        Assert.Contains(createResult.SessionId.ToString(), message);
+        
+        // Verify session is actually deleted
+        var getResponse = await _client.GetAsync($"/sessions/{createResult.SessionId}");
+        Assert.Equal(HttpStatusCode.NotFound, getResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task DeleteSession_NonExistentSession_ShouldReturnNotFound()
+    {
+        // Arrange
+        var nonExistentId = Guid.NewGuid();
+
+        // Act
+        var response = await _client.DeleteAsync($"/sessions/{nonExistentId}");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 } 

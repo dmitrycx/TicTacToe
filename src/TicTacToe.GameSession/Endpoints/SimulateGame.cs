@@ -1,4 +1,5 @@
 using FastEndpoints;
+using TicTacToe.GameEngine.Domain.Entities;
 using TicTacToe.GameSession.Domain.Aggregates;
 using TicTacToe.GameSession.Domain.Entities;
 using TicTacToe.GameSession.Domain.Enums;
@@ -9,6 +10,7 @@ using TicTacToe.GameSession.Infrastructure.External;
 using TicTacToe.GameSession.Infrastructure.External.DTOs;
 using TicTacToe.GameSession.Endpoints.DTOs;
 using TicTacToe.GameSession.Domain.Constants;
+using TicTacToe.GameSession.Domain.Services;
 
 namespace TicTacToe.GameSession.Endpoints;
 
@@ -18,12 +20,16 @@ namespace TicTacToe.GameSession.Endpoints;
 public class SimulateGameRequest
 {
     public Guid SessionId { get; set; }
+    public MoveType? MoveStrategy { get; set; } = MoveType.Random; // Default to random strategy
 }
 
 /// <summary>
 /// Endpoint for simulating a complete game.
 /// </summary>
-public abstract class SimulateGameEndpointBase(IGameSessionRepository repository, IGameEngineApiClient gameEngineClient)
+public abstract class SimulateGameEndpointBase(
+    IGameSessionRepository repository, 
+    IGameEngineApiClient gameEngineClient,
+    IMoveGeneratorFactory moveGeneratorFactory)
     : Endpoint<SimulateGameRequest, SimulateGameResponse>
 {
     public override void Configure()
@@ -63,8 +69,11 @@ public abstract class SimulateGameEndpointBase(IGameSessionRepository repository
 
             // Create game in Game Engine
             var createGameResponse = await gameEngineClient.CreateGameAsync();
-            session.SetGameId(createGameResponse.GameId); // Set the game ID from the response
+            session.SetGameId(createGameResponse.GameId);
             await repository.SaveAsync(session);
+            
+            // Get the move generator for the specified strategy
+            var moveGenerator = moveGeneratorFactory.CreateGenerator(req.MoveStrategy ?? MoveType.Random);
             
             // Simulate moves until game is complete
             var moves = new List<MoveInfo>();
@@ -72,20 +81,22 @@ public abstract class SimulateGameEndpointBase(IGameSessionRepository repository
             
             while (session.Status == SessionStatus.InProgress)
             {
-                // Generate a random move
-                var move = GenerateRandomMove(session);
-                if (move == null)
-                    break; // No more valid moves
-
+                // Get current game state from Game Engine
+                var gameState = await gameEngineClient.GetGameStateAsync(session.GameId);
+                var board = Board.FromStringRepresentation(gameState.Board);
+                
+                // Generate move using the selected strategy
+                var position = moveGenerator.GenerateMove(currentPlayer, board);
+                
                 // Make move in Game Engine
-                var moveRequest = new MakeMoveRequest(move.Position.Row, move.Position.Column);
-                var gameState = await gameEngineClient.MakeMoveAsync(session.GameId, moveRequest);
+                var moveRequest = new MakeMoveRequest(position.Row, position.Column);
+                gameState = await gameEngineClient.MakeMoveAsync(session.GameId, moveRequest);
                 
                 // Record move in session
-                session.RecordMove(move.Position, move.Player);
+                session.RecordMove(position, currentPlayer);
                 await repository.SaveAsync(session);
                 
-                moves.Add(new MoveInfo(move.Position.Row, move.Position.Column, move.Player.ToString()));
+                moves.Add(new MoveInfo(position.Row, position.Column, currentPlayer.ToString()));
 
                 // Check if game is complete
                 if (gameState.Status == SessionConstants.Status.Completed)
@@ -117,35 +128,14 @@ public abstract class SimulateGameEndpointBase(IGameSessionRepository repository
             await SendErrorsAsync(500, ct);
         }
     }
-
-    private static Move? GenerateRandomMove(Domain.Aggregates.GameSession session)
-    {
-        var random = new Random();
-        var attempts = 0;
-        const int maxAttempts = 100;
-
-        while (attempts < maxAttempts)
-        {
-            var row = random.Next(0, 3);
-            var column = random.Next(0, 3);
-            var position = new Position(row, column);
-
-            // Check if position is available
-            if (!session.Moves.Any(m => m.Position.Equals(position)))
-            {
-                var player = session.Moves.Count % 2 == 0 ? Player.X : Player.O;
-                return new Move(session.Id, player, position, MoveType.Random, session.Moves.Count + 1);
-            }
-
-            attempts++;
-        }
-
-        return null; // No valid moves found
-    }
 }
 
 // Concrete implementation for FastEndpoints discovery
 public class SimulateGameEndpoint : SimulateGameEndpointBase
 {
-    public SimulateGameEndpoint(IGameSessionRepository repository, IGameEngineApiClient gameEngineClient) : base(repository, gameEngineClient) { }
+    public SimulateGameEndpoint(
+        IGameSessionRepository repository, 
+        IGameEngineApiClient gameEngineClient,
+        IMoveGeneratorFactory moveGeneratorFactory) 
+        : base(repository, gameEngineClient, moveGeneratorFactory) { }
 } 
