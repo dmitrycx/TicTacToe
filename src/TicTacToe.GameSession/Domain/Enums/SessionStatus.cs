@@ -7,5 +7,6 @@ public enum SessionStatus
 {
     Created,
     InProgress,
-    Completed
+    Completed,
+    Failed
 } 

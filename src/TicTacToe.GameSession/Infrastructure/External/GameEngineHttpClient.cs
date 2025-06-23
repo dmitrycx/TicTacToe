@@ -35,8 +35,7 @@ public class GameEngineHttpClient : IGameEngineApiClient
         var response = await _httpClient.PostAsync("/games", null);
         response.EnsureSuccessStatusCode();
         
-        var content = await response.Content.ReadAsStringAsync();
-        return JsonSerializer.Deserialize<CreateGameResponse>(content, _jsonOptions) 
+        return await response.Content.ReadFromJsonAsync<CreateGameResponse>(_jsonOptions) 
                ?? throw new InvalidOperationException("Failed to deserialize create game response");
     }
 
@@ -48,14 +47,10 @@ public class GameEngineHttpClient : IGameEngineApiClient
     /// <returns>The updated game state.</returns>
     public async Task<GameStateResponse> MakeMoveAsync(Guid gameId, MakeMoveRequest request)
     {
-        var json = JsonSerializer.Serialize(request, _jsonOptions);
-        var content = new StringContent(json, Encoding.UTF8, "application/json");
-        
-        var response = await _httpClient.PostAsync($"/games/{gameId}/move", content);
+        var response = await _httpClient.PostAsJsonAsync($"/games/{gameId}/move", request, _jsonOptions);
         response.EnsureSuccessStatusCode();
         
-        var responseContent = await response.Content.ReadAsStringAsync();
-        return JsonSerializer.Deserialize<GameStateResponse>(responseContent, _jsonOptions) 
+        return await response.Content.ReadFromJsonAsync<GameStateResponse>(_jsonOptions) 
                ?? throw new InvalidOperationException("Failed to deserialize game state response");
     }
 
@@ -69,8 +64,7 @@ public class GameEngineHttpClient : IGameEngineApiClient
         var response = await _httpClient.GetAsync($"/games/{gameId}");
         response.EnsureSuccessStatusCode();
         
-        var content = await response.Content.ReadAsStringAsync();
-        return JsonSerializer.Deserialize<GameStateResponse>(content, _jsonOptions) 
+        return await response.Content.ReadFromJsonAsync<GameStateResponse>(_jsonOptions) 
                ?? throw new InvalidOperationException("Failed to deserialize game state response");
     }
 } 

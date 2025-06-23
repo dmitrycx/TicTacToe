@@ -1,12 +1,21 @@
 using Microsoft.Extensions.Options;
 using Polly;
 using Polly.Extensions.Http;
+using FastEndpoints;
+using FastEndpoints.Swagger;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+// FastEndpoints registration
+builder.Services.AddFastEndpoints();
+builder.Services.SwaggerDocument();
+
+// Configure JSON serialization to use string enums
+builder.Services.Configure<Microsoft.AspNetCore.Http.Json.JsonOptions>(options =>
+{
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+});
 
 // Configuration with Validation
 builder.Services.AddOptions<GameEngineSettings>()
@@ -28,19 +37,13 @@ builder.Services.AddHttpClient<IGameEngineApiClient, GameEngineHttpClient>((serv
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// FastEndpoints
+app.UseFastEndpoints();
+app.UseSwaggerGen();
 
 app.UseHttpsRedirection();
 
-app.MapControllers();
-
 app.Run();
-
 
 // Polly Retry Policy
 static IAsyncPolicy<HttpResponseMessage> GetRetryPolicy()
@@ -52,4 +55,9 @@ static IAsyncPolicy<HttpResponseMessage> GetRetryPolicy()
             TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)) + 
             TimeSpan.FromMilliseconds(new Random().Next(0, 100))
         );
+}
+
+namespace TicTacToe.GameSession
+{
+    public partial class Program { }
 }

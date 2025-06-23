@@ -1,5 +1,6 @@
 using TicTacToe.GameEngine.Domain.Enums;
 using TicTacToe.GameEngine.Domain.ValueObjects;
+using TicTacToe.GameSession.Domain.Constants;
 
 namespace TicTacToe.GameSession.Domain.Aggregates;
 
@@ -53,12 +54,31 @@ public class GameSession
     public GameStatus? Result { get; private set; }
     
     /// <summary>
+    /// Winner of the game (if completed).
+    /// </summary>
+    public string? Winner { get; private set; }
+    
+    /// <summary>
     /// Domain events that have occurred in this aggregate.
     /// </summary>
     public IReadOnlyCollection<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
 
     /// <summary>
     /// Creates a new game session.
+    /// </summary>
+    public static GameSession Create()
+    {
+        var session = new GameSession();
+        session.Id = Guid.NewGuid();
+        session.Status = SessionStatus.Created;
+        session.CreatedAt = DateTime.UtcNow;
+        
+        session._domainEvents.Add(new SessionCreatedEvent(session.Id, Guid.Empty));
+        return session;
+    }
+
+    /// <summary>
+    /// Creates a new game session with a specific game ID.
     /// </summary>
     /// <param name="gameId">The game ID from the Game Engine Service.</param>
     public GameSession(Guid gameId)
@@ -72,19 +92,50 @@ public class GameSession
     }
 
     /// <summary>
+    /// Sets the game ID from the Game Engine Service.
+    /// </summary>
+    /// <param name="gameId">The game ID.</param>
+    public void SetGameId(Guid gameId)
+    {
+        if (GameId != Guid.Empty)
+        {
+            throw new InvalidSessionStateException(SessionConstants.ErrorMessages.GameIdAlreadySet);
+        }
+        
+        GameId = gameId;
+    }
+
+    /// <summary>
     /// Starts the game simulation.
     /// </summary>
     public void StartSimulation()
     {
         if (Status != SessionStatus.Created)
         {
-            throw new InvalidSessionStateException($"Cannot start simulation for session in {Status} state.");
+            throw new InvalidSessionStateException(string.Format(SessionConstants.ErrorMessages.CannotStartSimulation, Status));
         }
         
         Status = SessionStatus.InProgress;
         StartedAt = DateTime.UtcNow;
         
         _domainEvents.Add(new SimulationStartedEvent(Id));
+    }
+
+    /// <summary>
+    /// Records a move in the session.
+    /// </summary>
+    /// <param name="position">The position of the move.</param>
+    /// <param name="player">The player making the move.</param>
+    public void RecordMove(Position position, Player player)
+    {
+        if (Status != SessionStatus.InProgress)
+        {
+            throw new InvalidSessionStateException(string.Format(SessionConstants.ErrorMessages.CannotRecordMoves, Status));
+        }
+        
+        var move = new Move(Id, player, position, MoveType.Random, _moves.Count + 1);
+        _moves.Add(move);
+        _domainEvents.Add(new MoveMadeEvent(Id, move));
     }
 
     /// <summary>
@@ -96,12 +147,12 @@ public class GameSession
         // Change this check to be more specific
         if (Status != SessionStatus.InProgress)
         {
-            throw new InvalidSessionStateException($"Cannot add moves to a session in the {Status} state. Session must be InProgress.");
+            throw new InvalidSessionStateException(string.Format(SessionConstants.ErrorMessages.CannotAddMoves, Status));
         }
         
         if (move.SessionId != Id)
         {
-            throw new ArgumentException("Move does not belong to this session.");
+            throw new ArgumentException(SessionConstants.ErrorMessages.MoveDoesNotBelongToSession);
         }
         
         _moves.Add(move);
@@ -116,7 +167,7 @@ public class GameSession
     {
         if (Status == SessionStatus.Completed)
         {
-            throw new InvalidSessionStateException("Session is already completed.");
+            throw new InvalidSessionStateException(SessionConstants.ErrorMessages.SessionAlreadyCompleted);
         }
         
         Status = SessionStatus.Completed;
@@ -124,6 +175,41 @@ public class GameSession
         Result = result;
         
         _domainEvents.Add(new GameCompletedEvent(Id, result));
+    }
+
+    /// <summary>
+    /// Completes the game session with a winner.
+    /// </summary>
+    /// <param name="winner">The winner of the game.</param>
+    public void CompleteGame(string? winner)
+    {
+        if (Status == SessionStatus.Completed)
+        {
+            throw new InvalidSessionStateException(SessionConstants.ErrorMessages.SessionAlreadyCompleted);
+        }
+        
+        Status = SessionStatus.Completed;
+        CompletedAt = DateTime.UtcNow;
+        Winner = winner;
+        
+        var result = winner switch
+        {
+            "X" => GameStatus.Win,
+            "O" => GameStatus.Win,
+            _ => GameStatus.Draw
+        };
+        
+        Result = result;
+        _domainEvents.Add(new GameCompletedEvent(Id, result));
+    }
+
+    /// <summary>
+    /// Marks the simulation as failed.
+    /// </summary>
+    public void FailSimulation()
+    {
+        Status = SessionStatus.Failed;
+        CompletedAt = DateTime.UtcNow;
     }
 
     /// <summary>

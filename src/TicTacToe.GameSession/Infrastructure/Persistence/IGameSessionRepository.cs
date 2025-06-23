@@ -6,12 +6,6 @@ namespace TicTacToe.GameSession.Infrastructure.Persistence;
 public interface IGameSessionRepository
 {
     /// <summary>
-    /// Adds a new game session.
-    /// </summary>
-    /// <param name="session">The session to add.</param>
-    Task AddAsync(TicTacToe.GameSession.Domain.Aggregates.GameSession session);
-
-    /// <summary>
     /// Retrieves a game session by its ID.
     /// </summary>
     /// <param name="id">The session ID.</param>
@@ -19,10 +13,18 @@ public interface IGameSessionRepository
     Task<TicTacToe.GameSession.Domain.Aggregates.GameSession?> GetByIdAsync(Guid id);
 
     /// <summary>
-    /// Updates an existing game session.
+    /// Saves or updates a game session in the repository.
     /// </summary>
-    /// <param name="session">The session to update.</param>
-    Task UpdateAsync(TicTacToe.GameSession.Domain.Aggregates.GameSession session);
+    /// <param name="session">The session to save or update.</param>
+    /// <returns>The saved session instance.</returns>
+    Task<TicTacToe.GameSession.Domain.Aggregates.GameSession> SaveAsync(TicTacToe.GameSession.Domain.Aggregates.GameSession session);
+
+    /// <summary>
+    /// Deletes a game session by its ID.
+    /// </summary>
+    /// <param name="id">The session ID to delete.</param>
+    /// <returns>True if the session was successfully deleted; otherwise, false.</returns>
+    Task<bool> DeleteAsync(Guid id);
 
     /// <summary>
     /// Retrieves all game sessions.
