@@ -3,15 +3,20 @@ using FluentAssertions;
 using Moq;
 using TicTacToe.GameSession.Persistence;
 using TicTacToe.GameSession.Tests.TestHelpers;
+using TicTacToe.GameSession.Domain.Aggregates;
+using TicTacToe.GameSession.Domain.Enums;
+using TicTacToe.GameSession.Domain.Exceptions;
 
 namespace TicTacToe.GameSession.Tests.Features.DeleteSession;
 
 /// <summary>
 /// Unit tests for DeleteSession domain logic and repository behavior
 /// </summary>
+[Trait("Category", "Unit")]
 public class DeleteSessionDomainTests
 {
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task Repository_DeleteAsync_ShouldReturnTrue_WhenSessionExists()
     {
         // Arrange
@@ -29,6 +34,7 @@ public class DeleteSessionDomainTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task Repository_DeleteAsync_ShouldReturnFalse_WhenSessionDoesNotExist()
     {
         // Arrange
@@ -46,6 +52,7 @@ public class DeleteSessionDomainTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task Repository_DeleteAsync_ShouldRemoveSessionFromRepository()
     {
         // Arrange
@@ -70,6 +77,7 @@ public class DeleteSessionDomainTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task Repository_DeleteAsync_ShouldHandleMultipleDeletions()
     {
         // Arrange
@@ -94,6 +102,7 @@ public class DeleteSessionDomainTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task Repository_DeleteAsync_ShouldHandleDeletionOfNonExistentSession()
     {
         // Arrange

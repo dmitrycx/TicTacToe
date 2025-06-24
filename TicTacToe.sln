@@ -12,7 +12,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TicTacToe.GameEngine.Tests", "tests\TicTacToe.GameEngine.Tests\TicTacToe.GameEngine.Tests.csproj", "{B1C9E3B0-B7E2-4E5A-B00F-BEB79F7BB690}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TicTacToe.GameSession.Tests", "tests\TicTacToe.GameSession.Tests\TicTacToe.GameSession.Tests.csproj", "{C1C710B-2637-4979-8294-50944E5C7810}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TicTacToe.GameSession.Tests", "tests\TicTacToe.GameSession.Tests\TicTacToe.GameSession.Tests.csproj", "{00000000-0000-0000-0000-000000000000}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -60,18 +60,8 @@ Global
 		{B1C9E3B0-B7E2-4E5A-B00F-BEB79F7BB690}.Release|x64.Build.0 = Release|Any CPU
 		{B1C9E3B0-B7E2-4E5A-B00F-BEB79F7BB690}.Release|x86.ActiveCfg = Release|Any CPU
 		{B1C9E3B0-B7E2-4E5A-B00F-BEB79F7BB690}.Release|x86.Build.0 = Release|Any CPU
-		{C1C710B-2637-4979-8294-50944E5C7810}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{C1C710B-2637-4979-8294-50944E5C7810}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{C1C710B-2637-4979-8294-50944E5C7810}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{C1C710B-2637-4979-8294-50944E5C7810}.Debug|x64.Build.0 = Debug|Any CPU
-		{C1C710B-2637-4979-8294-50944E5C7810}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{C1C710B-2637-4979-8294-50944E5C7810}.Debug|x86.Build.0 = Debug|Any CPU
-		{C1C710B-2637-4979-8294-50944E5C7810}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{C1C710B-2637-4979-8294-50944E5C7810}.Release|Any CPU.Build.0 = Release|Any CPU
-		{C1C710B-2637-4979-8294-50944E5C7810}.Release|x64.ActiveCfg = Release|Any CPU
-		{C1C710B-2637-4979-8294-50944E5C7810}.Release|x64.Build.0 = Release|Any CPU
-		{C1C710B-2637-4979-8294-50944E5C7810}.Release|x86.ActiveCfg = Release|Any CPU
-		{C1C710B-2637-4979-8294-50944E5C7810}.Release|x86.Build.0 = Release|Any CPU
+		{00000000-0000-0000-0000-000000000000}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{00000000-0000-0000-0000-000000000000}.Debug|Any CPU.Build.0 = Debug|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -81,5 +71,6 @@ Global
 		{418779AD-0D36-47A0-BE1D-73A478033128} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{B1C9E3B0-B7E2-4E5A-B00F-BEB79F7BB690} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{C1C710B-2637-4979-8294-50944E5C7810} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{00000000-0000-0000-0000-000000000000} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 EndGlobal

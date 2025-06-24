@@ -4,15 +4,19 @@ using Moq;
 using TicTacToe.GameEngine.Domain.Aggregates;
 using TicTacToe.GameEngine.Domain.Enums;
 using TicTacToe.GameEngine.Persistence;
+using TicTacToe.GameEngine.Domain.Exceptions;
+using TicTacToe.GameEngine.Domain.ValueObjects;
 
 namespace TicTacToe.GameEngine.Tests.Features.CreateGame;
 
 /// <summary>
 /// Unit tests for CreateGame domain logic and repository behavior
 /// </summary>
+[Trait("Category", "Unit")]
 public class CreateGameDomainTests
 {
     [Fact]
+    [Trait("Category", "Unit")]
     public void Game_Create_ShouldInitializeWithCorrectState()
     {
         // Act
@@ -27,6 +31,7 @@ public class CreateGameDomainTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void Game_Create_ShouldGenerateUniqueIds_WhenMultipleGamesCreated()
     {
         // Act
@@ -38,6 +43,7 @@ public class CreateGameDomainTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task Repository_SaveAsync_ShouldPersistGame()
     {
         // Arrange
@@ -56,6 +62,7 @@ public class CreateGameDomainTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task Repository_GetByIdAsync_ShouldReturnGame_WhenGameExists()
     {
         // Arrange
@@ -73,6 +80,7 @@ public class CreateGameDomainTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task Repository_GetByIdAsync_ShouldReturnNull_WhenGameDoesNotExist()
     {
         // Arrange

@@ -7,9 +7,14 @@ using System.Text.Json;
 using TicTacToe.GameEngine.Domain.Enums;
 using TicTacToe.GameEngine.Endpoints;
 using TicTacToe.GameEngine.Tests.Fixtures;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
+using TicTacToe.GameEngine.Domain.Aggregates;
+using TicTacToe.GameEngine.Persistence;
 
 namespace TicTacToe.GameEngine.Tests.Features.GetGameState;
 
+[Trait("Category", "Integration")]
 public class GetGameStateIntegrationTests(TestFixture fixture) : IClassFixture<TestFixture>
 {
     private readonly HttpClient _client = fixture.CreateClient();

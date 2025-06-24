@@ -3,14 +3,21 @@ using FastEndpoints;
 using FluentAssertions;
 using System.Net;
 using TicTacToe.GameSession.Tests.Fixtures;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
+using TicTacToe.GameSession.Domain.Aggregates;
+using TicTacToe.GameSession.Domain.Enums;
+using TicTacToe.GameSession.Persistence;
 
 namespace TicTacToe.GameSession.Tests.Features.DeleteSession;
 
+[Trait("Category", "Unit")]
 public class DeleteSessionConfigurationTests(TestFixture fixture) : IClassFixture<TestFixture>
 {
     private readonly HttpClient _client = fixture.CreateClient();
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task DeleteSessionEndpoint_ShouldBeConfiguredCorrectly()
     {
         // Arrange
@@ -27,6 +34,7 @@ public class DeleteSessionConfigurationTests(TestFixture fixture) : IClassFixtur
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task DELETE_Sessions_WithValidGuid_ShouldAcceptRequest()
     {
         // Arrange
@@ -45,6 +53,7 @@ public class DeleteSessionConfigurationTests(TestFixture fixture) : IClassFixtur
     [InlineData("not-a-guid")]
     [InlineData("123")]
     [InlineData("")]
+    [Trait("Category", "Unit")]
     public async Task DELETE_Sessions_WithInvalidGuid_ShouldRejectRequest(string invalidGuid)
     {
         // Arrange
@@ -59,6 +68,7 @@ public class DeleteSessionConfigurationTests(TestFixture fixture) : IClassFixtur
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task DELETE_Sessions_ShouldReturnNotFound_WhenSessionDoesNotExist()
     {
         // Arrange
@@ -72,6 +82,7 @@ public class DeleteSessionConfigurationTests(TestFixture fixture) : IClassFixtur
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task DELETE_Sessions_ShouldReturnJsonContent_WhenSuccessful()
     {
         // Arrange

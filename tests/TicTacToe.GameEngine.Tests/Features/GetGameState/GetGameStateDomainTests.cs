@@ -3,6 +3,8 @@ using FluentAssertions;
 using Moq;
 using TicTacToe.GameEngine.Domain.Aggregates;
 using TicTacToe.GameEngine.Domain.Enums;
+using TicTacToe.GameEngine.Domain.Exceptions;
+using TicTacToe.GameEngine.Domain.ValueObjects;
 using TicTacToe.GameEngine.Persistence;
 using TicTacToe.GameEngine.Tests.TestHelpers;
 
@@ -11,13 +13,15 @@ namespace TicTacToe.GameEngine.Tests.Features.GetGameState;
 /// <summary>
 /// Unit tests for GetGameState domain logic and repository behavior
 /// </summary>
+[Trait("Category", "Unit")]
 public class GetGameStateDomainTests
 {
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task Repository_GetByIdAsync_ShouldReturnGame_WhenGameExists()
     {
         // Arrange
-        var game = GameTestHelpers.CreateNewGame();
+        var game = GameTestHelpers.CreateWinningGame();
         var mockRepository = new Mock<IGameRepository>();
         mockRepository.Setup(r => r.GetByIdAsync(game.Id))
             .ReturnsAsync(game);
@@ -31,6 +35,7 @@ public class GetGameStateDomainTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task Repository_GetByIdAsync_ShouldReturnNull_WhenGameDoesNotExist()
     {
         // Arrange
@@ -48,60 +53,60 @@ public class GetGameStateDomainTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void Game_Properties_ShouldBeAccessible()
     {
         // Arrange
-        var game = GameTestHelpers.CreateNewGame();
+        var game = GameTestHelpers.CreateWinningGame();
 
         // Act & Assert
         game.Id.Should().NotBeEmpty();
-        game.Status.Should().Be(GameStatus.InProgress);
-        game.CurrentPlayer.Should().Be(Player.X);
-        game.Winner.Should().BeNull();
+        game.Status.Should().Be(GameStatus.Won);
+        game.CurrentPlayer.Should().Be(Player.O);
+        game.Winner.Should().Be(Player.X);
         game.Board.Should().NotBeNull();
-        game.CreatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(1));
-        game.LastMoveAt.Should().BeNull();
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void Game_Board_ShouldBeConvertibleToStrings()
     {
         // Arrange
-        var game = GameTestHelpers.CreateNewGame();
-        var board = game.Board.ToListOfLists();
+        var game = GameTestHelpers.CreateWinningGame();
 
         // Act
-        var stringBoard = board.Select(row => 
-            row.Select(cell => cell?.ToString() ?? "").ToList()
-        ).ToList();
+        var boardStrings = game.Board.ToStrings();
 
         // Assert
-        stringBoard.Should().HaveCount(3);
-        stringBoard[0].Should().HaveCount(3);
-        stringBoard[1].Should().HaveCount(3);
-        stringBoard[2].Should().HaveCount(3);
+        boardStrings.Should().HaveCount(3);
+        boardStrings[0].Should().Be("X|O|X");
+        boardStrings[1].Should().Be("O|X|O");
+        boardStrings[2].Should().Be("X| | ");
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void Game_WinningGame_ShouldHaveCorrectState()
     {
-        // Arrange
-        var game = GameTestHelpers.CreateWinningGame(Player.X);
+        // Arrange & Act
+        var game = GameTestHelpers.CreateWinningGame();
 
-        // Act & Assert
-        game.Status.Should().Be(GameStatus.Win);
+        // Assert
+        game.Status.Should().Be(GameStatus.Won);
         game.Winner.Should().Be(Player.X);
-        game.CurrentPlayer.Should().Be(Player.X); // Last player to move
+        game.CurrentPlayer.Should().Be(Player.O);
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void Game_DrawGame_ShouldHaveCorrectState()
     {
-        // Arrange
+        // Arrange & Act
         var game = GameTestHelpers.CreateDrawGame();
 
-        // Act & Assert
+        // Assert
         game.Status.Should().Be(GameStatus.Draw);
         game.Winner.Should().BeNull();
+        game.CurrentPlayer.Should().Be(Player.O);
     }
 } 

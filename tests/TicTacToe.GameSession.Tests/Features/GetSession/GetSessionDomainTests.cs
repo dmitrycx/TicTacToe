@@ -5,12 +5,21 @@ using TicTacToe.GameEngine.Domain.ValueObjects;
 using TicTacToe.GameSession.Domain.Entities;
 using TicTacToe.GameSession.Domain.Enums;
 using TicTacToe.GameSession.Endpoints;
+using TicTacToe.GameSession.Domain.Aggregates;
+using TicTacToe.GameSession.Domain.Exceptions;
+using TicTacToe.GameSession.Persistence;
+using TicTacToe.GameSession.Tests.TestHelpers;
 
 namespace TicTacToe.GameSession.Tests.Features.GetSession;
 
+/// <summary>
+/// Unit tests for GetSession domain logic and repository behavior
+/// </summary>
+[Trait("Category", "Unit")]
 public class GetSessionDomainTests
 {
     [Fact]
+    [Trait("Category", "Unit")]
     public void ToResponse_ShouldMapAllPropertiesCorrectly_ForCompletedSession()
     {
         // Arrange
@@ -53,6 +62,7 @@ public class GetSessionDomainTests
     }
     
     [Fact]
+    [Trait("Category", "Unit")]
     public void ToResponse_ShouldHandleNullsCorrectly_ForNewSession()
     {
         // Arrange
@@ -68,5 +78,55 @@ public class GetSessionDomainTests
         response.Winner.Should().BeNull();
         response.Result.Should().BeNull();
         response.Moves.Should().BeEmpty();
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task Repository_GetByIdAsync_ShouldReturnSession_WhenSessionExists()
+    {
+        // Arrange
+        var session = GameSession.Create();
+        var mockRepository = new Mock<IGameSessionRepository>();
+        mockRepository.Setup(r => r.GetByIdAsync(session.Id))
+            .ReturnsAsync(session);
+
+        // Act
+        var retrievedSession = await mockRepository.Object.GetByIdAsync(session.Id);
+
+        // Assert
+        retrievedSession.Should().Be(session);
+        mockRepository.Verify(r => r.GetByIdAsync(session.Id), Times.Once);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task Repository_GetByIdAsync_ShouldReturnNull_WhenSessionDoesNotExist()
+    {
+        // Arrange
+        var sessionId = Guid.NewGuid();
+        var mockRepository = new Mock<IGameSessionRepository>();
+        mockRepository.Setup(r => r.GetByIdAsync(sessionId))
+            .ReturnsAsync((GameSession?)null);
+
+        // Act
+        var retrievedSession = await mockRepository.Object.GetByIdAsync(sessionId);
+
+        // Assert
+        retrievedSession.Should().BeNull();
+        mockRepository.Verify(r => r.GetByIdAsync(sessionId), Times.Once);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void GameSession_Properties_ShouldBeAccessible()
+    {
+        // Arrange
+        var session = GameSession.Create();
+
+        // Act & Assert
+        session.Id.Should().NotBeEmpty();
+        session.Status.Should().Be(SessionStatus.Created);
+        session.CreatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(1));
+        session.Moves.Should().BeEmpty();
     }
 } 

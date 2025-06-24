@@ -5,12 +5,21 @@ using TicTacToe.GameEngine.Domain.ValueObjects;
 using TicTacToe.GameSession.Domain.Entities;
 using TicTacToe.GameSession.Domain.Enums;
 using TicTacToe.GameSession.Endpoints;
+using TicTacToe.GameSession.Domain.Aggregates;
+using TicTacToe.GameSession.Domain.Exceptions;
+using TicTacToe.GameSession.Persistence;
+using TicTacToe.GameSession.Tests.TestHelpers;
 
 namespace TicTacToe.GameSession.Tests.Features.ListSessions;
 
+/// <summary>
+/// Unit tests for ListSessions domain logic and repository behavior
+/// </summary>
+[Trait("Category", "Unit")]
 public class ListSessionsDomainTests
 {
     [Fact]
+    [Trait("Category", "Unit")]
     public void ToResponse_ShouldMapMultipleSessionsCorrectly()
     {
         // Arrange
@@ -65,6 +74,7 @@ public class ListSessionsDomainTests
     }
     
     [Fact]
+    [Trait("Category", "Unit")]
     public void ToResponse_ShouldHandleEmptyList()
     {
         // Arrange
@@ -78,6 +88,7 @@ public class ListSessionsDomainTests
     }
     
     [Fact]
+    [Trait("Category", "Unit")]
     public void ToSummary_ShouldMapIndividualSessionCorrectly()
     {
         // Arrange
@@ -95,5 +106,46 @@ public class ListSessionsDomainTests
         summary.CreatedAt.Should().Be(session.CreatedAt);
         summary.MoveCount.Should().Be(1);
         summary.Winner.Should().Be("X");
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task Repository_GetAllAsync_ShouldReturnAllSessions()
+    {
+        // Arrange
+        var sessions = new List<GameSession>
+        {
+            GameSession.Create(),
+            GameSession.Create(),
+            GameSession.Create()
+        };
+        
+        var mockRepository = new Mock<IGameSessionRepository>();
+        mockRepository.Setup(r => r.GetAllAsync())
+            .ReturnsAsync(sessions);
+
+        // Act
+        var retrievedSessions = await mockRepository.Object.GetAllAsync();
+
+        // Assert
+        retrievedSessions.Should().BeEquivalentTo(sessions);
+        mockRepository.Verify(r => r.GetAllAsync(), Times.Once);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task Repository_GetAllAsync_ShouldReturnEmptyList_WhenNoSessionsExist()
+    {
+        // Arrange
+        var mockRepository = new Mock<IGameSessionRepository>();
+        mockRepository.Setup(r => r.GetAllAsync())
+            .ReturnsAsync(new List<GameSession>());
+
+        // Act
+        var retrievedSessions = await mockRepository.Object.GetAllAsync();
+
+        // Assert
+        retrievedSessions.Should().BeEmpty();
+        mockRepository.Verify(r => r.GetAllAsync(), Times.Once);
     }
 } 

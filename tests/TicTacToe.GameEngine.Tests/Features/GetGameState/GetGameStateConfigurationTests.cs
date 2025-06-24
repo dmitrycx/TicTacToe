@@ -3,14 +3,21 @@ using FastEndpoints;
 using FluentAssertions;
 using System.Net;
 using TicTacToe.GameEngine.Tests.Fixtures;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
+using TicTacToe.GameEngine.Domain.Aggregates;
+using TicTacToe.GameEngine.Domain.Enums;
+using TicTacToe.GameEngine.Persistence;
 
 namespace TicTacToe.GameEngine.Tests.Features.GetGameState;
 
+[Trait("Category", "Unit")]
 public class GetGameStateConfigurationTests(TestFixture fixture) : IClassFixture<TestFixture>
 {
     private readonly HttpClient _client = fixture.CreateClient();
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task GetGameStateEndpoint_ShouldBeConfiguredCorrectly()
     {
         // Arrange
@@ -32,6 +39,7 @@ public class GetGameStateConfigurationTests(TestFixture fixture) : IClassFixture
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task GET_Games_InvalidGuidFormat_ShouldReturn404()
     {
         // Arrange

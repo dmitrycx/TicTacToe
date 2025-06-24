@@ -10,9 +10,15 @@ using TicTacToe.GameSession.Infrastructure.External;
 using TicTacToe.GameSession.Endpoints;
 using TicTacToe.GameSession.Domain.Enums;
 using TicTacToe.GameSession.Domain.Exceptions;
+using TicTacToe.GameSession.Persistence;
+using TicTacToe.GameSession.Tests.TestHelpers;
 
 namespace TicTacToe.GameSession.Tests.Features.SimulateGame;
 
+/// <summary>
+/// Unit tests for SimulateGame domain logic and repository behavior
+/// </summary>
+[Trait("Category", "Unit")]
 public class SimulateGameDomainTests
 {
     private readonly Mock<IMoveGenerator> _mockMoveGenerator;
@@ -27,6 +33,7 @@ public class SimulateGameDomainTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task Simulate_Should_CreateGame_And_StartSimulation()
     {
         // Arrange
@@ -76,6 +83,7 @@ public class SimulateGameDomainTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task Simulate_Should_CompleteWithWinner_WhenApiClientReportsWin()
     {
         // Arrange
@@ -130,6 +138,7 @@ public class SimulateGameDomainTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task Simulate_Should_CompleteWithDraw_WhenApiClientReportsDraw()
     {
         // Arrange
@@ -184,6 +193,7 @@ public class SimulateGameDomainTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task Simulate_Should_ThrowException_IfCreateGameFails()
     {
         // Arrange
@@ -198,6 +208,7 @@ public class SimulateGameDomainTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task Simulate_Should_ThrowException_IfSessionNotInCreatedState()
     {
         // Arrange
@@ -208,5 +219,92 @@ public class SimulateGameDomainTests
         
         await action.Should().ThrowAsync<InvalidSessionStateException>();
         _session.Status.Should().Be(SessionStatus.InProgress);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void GameSession_SimulateGame_ShouldCompleteSuccessfully()
+    {
+        // Arrange
+        var session = GameSession.Create();
+        var mockMoveGenerator = new Mock<IMoveGenerator>();
+        mockMoveGenerator.Setup(m => m.GenerateMove(It.IsAny<GameSession>()))
+            .Returns((0, 0));
+
+        // Act
+        session.SimulateGame(mockMoveGenerator.Object);
+
+        // Assert
+        session.Status.Should().Be(SessionStatus.Completed);
+        session.Moves.Should().NotBeEmpty();
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void GameSession_SimulateGame_ShouldThrowException_WhenSessionAlreadyCompleted()
+    {
+        // Arrange
+        var session = GameSessionTestHelpers.CreateCompletedSession();
+        var mockMoveGenerator = new Mock<IMoveGenerator>();
+
+        // Act & Assert
+        var action = () => session.SimulateGame(mockMoveGenerator.Object);
+        action.Should().Throw<InvalidSessionStateException>()
+            .WithMessage("*Session is already completed*");
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task Repository_SaveAsync_ShouldPersistSession()
+    {
+        // Arrange
+        var mockRepository = new Mock<IGameSessionRepository>();
+        mockRepository.Setup(r => r.SaveAsync(It.IsAny<GameSession>()))
+            .ReturnsAsync((GameSession session) => session);
+        
+        var session = GameSession.Create();
+
+        // Act
+        var savedSession = await mockRepository.Object.SaveAsync(session);
+
+        // Assert
+        savedSession.Should().Be(session);
+        mockRepository.Verify(r => r.SaveAsync(It.IsAny<GameSession>()), Times.Once);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task Repository_GetByIdAsync_ShouldReturnSession_WhenSessionExists()
+    {
+        // Arrange
+        var session = GameSession.Create();
+        var mockRepository = new Mock<IGameSessionRepository>();
+        mockRepository.Setup(r => r.GetByIdAsync(session.Id))
+            .ReturnsAsync(session);
+
+        // Act
+        var retrievedSession = await mockRepository.Object.GetByIdAsync(session.Id);
+
+        // Assert
+        retrievedSession.Should().Be(session);
+        mockRepository.Verify(r => r.GetByIdAsync(session.Id), Times.Once);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task Repository_GetByIdAsync_ShouldReturnNull_WhenSessionDoesNotExist()
+    {
+        // Arrange
+        var sessionId = Guid.NewGuid();
+        var mockRepository = new Mock<IGameSessionRepository>();
+        mockRepository.Setup(r => r.GetByIdAsync(sessionId))
+            .ReturnsAsync((GameSession?)null);
+
+        // Act
+        var retrievedSession = await mockRepository.Object.GetByIdAsync(sessionId);
+
+        // Assert
+        retrievedSession.Should().BeNull();
+        mockRepository.Verify(r => r.GetByIdAsync(sessionId), Times.Once);
     }
 } 

@@ -4,14 +4,22 @@ using FluentAssertions;
 using System.Net;
 using System.Text;
 using TicTacToe.GameEngine.Tests.Fixtures;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
+using TicTacToe.GameEngine.Domain.Aggregates;
+using TicTacToe.GameEngine.Domain.Enums;
+using TicTacToe.GameEngine.Domain.ValueObjects;
+using TicTacToe.GameEngine.Persistence;
 
 namespace TicTacToe.GameEngine.Tests.Features.MakeMove;
 
+[Trait("Category", "Unit")]
 public class MakeMoveConfigurationTests(TestFixture fixture) : IClassFixture<TestFixture>
 {
     private readonly HttpClient _client = fixture.CreateClient();
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task MakeMoveEndpoint_ShouldBeConfiguredCorrectly()
     {
         // Arrange
@@ -35,6 +43,7 @@ public class MakeMoveConfigurationTests(TestFixture fixture) : IClassFixture<Tes
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task POST_Games_Move_InvalidGuidFormat_ShouldReturn404()
     {
         // Arrange
@@ -52,6 +61,7 @@ public class MakeMoveConfigurationTests(TestFixture fixture) : IClassFixture<Tes
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task POST_Games_Move_ShouldAcceptJsonContent()
     {
         // Arrange

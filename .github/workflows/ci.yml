@@ -15,7 +15,7 @@
 #
 # Performance Features:
 #   - Intelligent NuGet package caching for faster builds
-#   - Unified test execution (unit + integration) for efficiency
+#   - Separated test execution (unit vs integration) for efficiency
 #   - Incremental builds with --no-restore optimization
 #
 # Quality Features:
@@ -25,19 +25,9 @@
 #   - Detailed artifacts for debugging and analysis
 #   - 7-day artifact retention for post-analysis
 #
-# Workflow Steps:
-#   1. Checkout: Retrieve source code from repository
-#   2. Security Scan: Check dependencies for vulnerabilities
-#   3. Secrets Scan: Detect hardcoded secrets and credentials
-#   4. Container Scan: Scan for container vulnerabilities (if applicable)
-#   5. Setup: Configure .NET 9.0.x environment
-#   6. Cache: Restore NuGet packages from cache
-#   7. Restore: Download missing dependencies
-#   8. Build: Compile solution in Release configuration
-#   9. Quality Scan: Run static code analysis and quality checks
-#   10. Test: Execute all tests with coverage collection
-#   11. Report: Publish test results to PR interface
-#   12. Artifacts: Upload detailed reports for download
+# Workflow Jobs:
+#   Job 1 (unit-tests): Fast feedback with unit tests only
+#   Job 2 (integration-and-security-tests): Security scanning + integration tests
 # ------------------------------------------------------------------------------
 name: .NET CI
 
@@ -60,9 +50,68 @@ on:
       - '.github/workflows/ci.yml'
 
 jobs:
-  build-and-test:
-    name: Build & Test
+  # JOB 1: Fast feedback with unit tests only
+  unit-tests:
+    name: Build & Unit Tests
     runs-on: ubuntu-latest
+    
+    # SECURITY BEST PRACTICE: Restrict permissions for the GITHUB_TOKEN.
+    permissions:
+      contents: read      # Allow checkout
+      pull-requests: read # Allow PR-based actions
+      checks: write       # Allow test-reporter to publish a check
+      actions: read       # Allow discovering actions
+
+    steps:
+      # STEP 1: Retrieve source code from the repository
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # STEP 2: Configure .NET 9.0.x development environment
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      # STEP 3: Performance optimization - restore NuGet packages from cache
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json', '**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      # STEP 4: Download project dependencies from NuGet
+      - name: Restore dependencies
+        run: dotnet restore
+
+      # STEP 5: Compile the solution in Release configuration
+      - name: Build solution
+        run: dotnet build --no-restore --configuration Release
+      
+      # STEP 6: Run ONLY the unit tests (Domain + Configuration) for fast feedback
+      - name: Run unit tests
+        run: >
+          dotnet test --no-build --configuration Release
+          --filter "Category=Unit" 
+          --results-directory ./test-results/
+          --logger "trx;LogFileName=unit-test-results.trx"
+
+      # STEP 7: Upload unit test results immediately
+      - name: Upload unit test artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: unit-test-results
+          path: ./test-results/unit-test-results.trx
+          retention-days: 7
+
+  # JOB 2: Security scanning and slower integration tests
+  integration-and-security-tests:
+    name: Integration & Security Tests
+    runs-on: ubuntu-latest
+    needs: unit-tests # CRITICAL: This job only runs if unit-tests job succeeds
 
     # SECURITY BEST PRACTICE: Restrict permissions for the GITHUB_TOKEN.
     permissions:
@@ -104,7 +153,7 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '9.0.x'
-
+      
       # STEP 6: Performance optimization - restore NuGet packages from cache
       - name: Cache NuGet packages
         uses: actions/cache@v4
@@ -117,8 +166,8 @@ jobs:
       # STEP 7: Download project dependencies from NuGet
       - name: Restore dependencies
         run: dotnet restore
-
-      # STEP 8: Compile the solution in Release configuration
+        
+      # STEP 8: Compile the solution in Release configuration (safer to rebuild)
       - name: Build solution
         run: dotnet build --no-restore --configuration Release
 
@@ -126,13 +175,14 @@ jobs:
       - name: Run Security Analysis
         run: dotnet list package --vulnerable
 
-      # STEP 10: Execute all tests and collect code coverage metrics
-      - name: Run tests with coverage
+      # STEP 10: Run ONLY the integration tests with coverage collection
+      - name: Run integration tests with coverage
         run: >
           dotnet test --no-build --configuration Release
+          --filter "Category=Integration"
           --collect:"XPlat Code Coverage"
           --results-directory ./test-results/
-          --logger "trx;LogFileName=test-results.trx"
+          --logger "trx;LogFileName=integration-test-results.trx"
 
       # STEP 11: Publish test results to pull request interface
       - name: Publish Test Results
@@ -140,7 +190,7 @@ jobs:
         if: always()
         with:
           name: Test Results
-          path: ./test-results/test-results.trx
+          path: ./test-results/integration-test-results.trx
           reporter: dotnet-trx
 
       # STEP 12: Upload detailed reports and coverage data for analysis
