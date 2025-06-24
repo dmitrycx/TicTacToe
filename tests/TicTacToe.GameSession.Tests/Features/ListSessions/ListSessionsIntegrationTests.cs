@@ -1,13 +1,7 @@
-using Xunit;
-using FluentAssertions;
-using System.Text.Json;
 using TicTacToe.GameSession.Endpoints;
 using TicTacToe.GameSession.Tests.Fixtures;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
-using TicTacToe.GameSession.Domain.Aggregates;
-using TicTacToe.GameSession.Domain.Enums;
-using TicTacToe.GameSession.Persistence;
+using TicTacToe.GameEngine.Domain.Enums;
+using TicTacToe.GameEngine.Domain.ValueObjects;
 
 namespace TicTacToe.GameSession.Tests.Features.ListSessions;
 
@@ -18,19 +12,20 @@ public class ListSessionsIntegrationTests(TestFixture fixture) : IClassFixture<T
     private readonly JsonSerializerOptions _jsonOptions = new() { PropertyNameCaseInsensitive = true };
 
     [Fact]
+    [Trait("Category", "Integration")]
     public async Task ListSessions_ShouldReturnMultipleSessions_WhenSessionsExist()
     {
         // Arrange
-        var session1 = new TicTacToe.GameSession.Domain.Aggregates.GameSession(Guid.NewGuid());
-        var session2 = new TicTacToe.GameSession.Domain.Aggregates.GameSession(Guid.NewGuid());
-        var session3 = new TicTacToe.GameSession.Domain.Aggregates.GameSession(Guid.NewGuid());
+        var session1 = new Domain.Aggregates.GameSession(Guid.NewGuid());
+        var session2 = new Domain.Aggregates.GameSession(Guid.NewGuid());
+        var session3 = new Domain.Aggregates.GameSession(Guid.NewGuid());
         
         // Add some state to sessions
         session2.StartSimulation();
-        session2.RecordMove(new TicTacToe.GameEngine.Domain.ValueObjects.Position(0, 0), TicTacToe.GameEngine.Domain.Enums.Player.X);
+        session2.RecordMove(Position.Create(0, 0), Player.X);
         
         session3.StartSimulation();
-        session3.RecordMove(new TicTacToe.GameEngine.Domain.ValueObjects.Position(0, 0), TicTacToe.GameEngine.Domain.Enums.Player.X);
+        session3.RecordMove(Position.Create(0, 0), Player.X);
         session3.CompleteGame("X");
         
         await fixture.GameSessionRepository.SaveAsync(session1);
@@ -43,9 +38,9 @@ public class ListSessionsIntegrationTests(TestFixture fixture) : IClassFixture<T
         var sessionsResponse = JsonSerializer.Deserialize<ListSessionsResponse>(content, _jsonOptions);
         
         // Assert
-        Assert.Equal(200, (int)response.StatusCode);
-        Assert.NotNull(sessionsResponse);
-        sessionsResponse.Sessions.Should().HaveCount(3);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        sessionsResponse.Should().NotBeNull();
+        sessionsResponse!.Sessions.Should().HaveCount(3);
         
         // Verify all sessions are present
         var sessionIds = sessionsResponse.Sessions.Select(s => s.SessionId).ToList();
@@ -71,6 +66,7 @@ public class ListSessionsIntegrationTests(TestFixture fixture) : IClassFixture<T
     }
     
     [Fact]
+    [Trait("Category", "Integration")]
     public async Task ListSessions_ShouldReturnEmptyList_WhenNoSessionsExist()
     {
         // Arrange - ensure clean repository
@@ -86,8 +82,8 @@ public class ListSessionsIntegrationTests(TestFixture fixture) : IClassFixture<T
         var sessionsResponse = JsonSerializer.Deserialize<ListSessionsResponse>(content, _jsonOptions);
         
         // Assert
-        Assert.Equal(200, (int)response.StatusCode);
-        Assert.NotNull(sessionsResponse);
-        sessionsResponse.Sessions.Should().BeEmpty();
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        sessionsResponse.Should().NotBeNull();
+        sessionsResponse!.Sessions.Should().BeEmpty();
     }
 } 

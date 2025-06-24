@@ -1,12 +1,8 @@
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
-using TicTacToe.GameSession.Persistence;
-using TicTacToe.GameSession.Infrastructure.External;
 using TicTacToe.GameEngine.Persistence;
-using Moq;
 
 namespace TicTacToe.GameSession.Tests.Fixtures;
 

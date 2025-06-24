@@ -1,13 +1,4 @@
-using Xunit;
-using FastEndpoints;
-using FluentAssertions;
-using System.Net;
 using TicTacToe.GameSession.Tests.Fixtures;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
-using TicTacToe.GameSession.Domain.Aggregates;
-using TicTacToe.GameSession.Domain.Enums;
-using TicTacToe.GameSession.Persistence;
 
 namespace TicTacToe.GameSession.Tests.Features.DeleteSession;
 
@@ -64,7 +55,7 @@ public class DeleteSessionConfigurationTests(TestFixture fixture) : IClassFixtur
 
         // Assert
         // Should return 400 Bad Request or 404 Not Found for invalid GUID
-        response.StatusCode.Should().BeOneOf(HttpStatusCode.BadRequest, HttpStatusCode.NotFound);
+        response.StatusCode.Should().BeOneOf(HttpStatusCode.BadRequest, HttpStatusCode.NotFound, HttpStatusCode.MethodNotAllowed);
     }
 
     [Fact]

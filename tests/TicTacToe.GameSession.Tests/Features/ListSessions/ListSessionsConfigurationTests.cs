@@ -1,11 +1,4 @@
-using System.Net;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
-using TicTacToe.GameSession.Domain.Aggregates;
-using TicTacToe.GameSession.Domain.Enums;
-using TicTacToe.GameSession.Persistence;
 using TicTacToe.GameSession.Tests.Fixtures;
-using Xunit;
 
 namespace TicTacToe.GameSession.Tests.Features.ListSessions;
 
@@ -14,13 +7,13 @@ public class ListSessionsConfigurationTests(TestFixture fixture) : IClassFixture
 {
     [Fact]
     [Trait("Category", "Unit")]
-    public void ListSessionsEndpoint_ShouldBeConfiguredCorrectly()
+    public async Task ListSessionsEndpoint_ShouldBeConfiguredCorrectly()
     {
         // Arrange
         var app = fixture.CreateClient();
 
         // Act
-        var response = app.GetAsync("/sessions").Result;
+        var response = await app.GetAsync("/sessions");
 
         // Assert
         response.Should().NotBeNull();
@@ -30,13 +23,13 @@ public class ListSessionsConfigurationTests(TestFixture fixture) : IClassFixture
 
     [Fact]
     [Trait("Category", "Unit")]
-    public void GET_Sessions_ShouldReturnJsonResponse()
+    public async Task GET_Sessions_ShouldReturnJsonResponse()
     {
         // Arrange
         var app = fixture.CreateClient();
 
         // Act
-        var response = app.GetAsync("/sessions").Result;
+        var response = await app.GetAsync("/sessions");
 
         // Assert
         response.Should().NotBeNull();
@@ -45,13 +38,13 @@ public class ListSessionsConfigurationTests(TestFixture fixture) : IClassFixture
 
     [Fact]
     [Trait("Category", "Unit")]
-    public void GET_Sessions_ShouldNotRequireAuthentication()
+    public async Task GET_Sessions_ShouldNotRequireAuthentication()
     {
         // Arrange
         var app = fixture.CreateClient();
 
         // Act
-        var response = app.GetAsync("/sessions").Result;
+        var response = await app.GetAsync("/sessions");
 
         // Assert
         response.Should().NotBeNull();

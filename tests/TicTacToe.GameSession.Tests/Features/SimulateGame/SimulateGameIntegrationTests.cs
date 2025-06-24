@@ -1,14 +1,4 @@
-using Xunit;
-using FluentAssertions;
-using System.Text.Json;
-using System.Text;
-using TicTacToe.GameSession.Endpoints;
 using TicTacToe.GameSession.Tests.Fixtures;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
-using TicTacToe.GameSession.Domain.Aggregates;
-using TicTacToe.GameSession.Domain.Enums;
-using TicTacToe.GameSession.Persistence;
 
 namespace TicTacToe.GameSession.Tests.Features.SimulateGame;
 
@@ -19,6 +9,7 @@ public class SimulateGameIntegrationTests(TestFixture fixture) : IClassFixture<T
     private readonly JsonSerializerOptions _jsonOptions = new() { PropertyNameCaseInsensitive = true };
 
     [Fact]
+    [Trait("Category", "Integration")]
     public async Task SimulateGame_WithNonExistentSession_ShouldReturn404()
     {
         // Arrange
@@ -31,14 +22,15 @@ public class SimulateGameIntegrationTests(TestFixture fixture) : IClassFixture<T
         var response = await _client.PostAsync($"/sessions/{nonExistentId}/simulate", content);
         
         // Assert
-        Assert.Equal(404, (int)response.StatusCode);
+        response.StatusCode.Should().Be(System.Net.HttpStatusCode.NotFound);
     }
     
     [Fact]
+    [Trait("Category", "Integration")]
     public async Task SimulateGame_WithAlreadyCompletedSession_ShouldReturn400()
     {
         // Arrange
-        var session = new TicTacToe.GameSession.Domain.Aggregates.GameSession(Guid.NewGuid());
+        var session = new Domain.Aggregates.GameSession(Guid.NewGuid());
         session.StartSimulation();
         session.CompleteGame("X");
         await fixture.GameSessionRepository.SaveAsync(session);
@@ -50,14 +42,15 @@ public class SimulateGameIntegrationTests(TestFixture fixture) : IClassFixture<T
         var response = await _client.PostAsync($"/sessions/{session.Id}/simulate", content);
         
         // Assert
-        Assert.Equal(400, (int)response.StatusCode);
+        response.StatusCode.Should().Be(System.Net.HttpStatusCode.BadRequest);
     }
     
     [Fact]
+    [Trait("Category", "Integration")]
     public async Task SimulateGame_WithInProgressSession_ShouldReturn400()
     {
         // Arrange
-        var session = new TicTacToe.GameSession.Domain.Aggregates.GameSession(Guid.NewGuid());
+        var session = new Domain.Aggregates.GameSession(Guid.NewGuid());
         session.StartSimulation();
         await fixture.GameSessionRepository.SaveAsync(session);
         
@@ -68,6 +61,6 @@ public class SimulateGameIntegrationTests(TestFixture fixture) : IClassFixture<T
         var response = await _client.PostAsync($"/sessions/{session.Id}/simulate", content);
         
         // Assert
-        Assert.Equal(400, (int)response.StatusCode);
+        response.StatusCode.Should().Be(System.Net.HttpStatusCode.BadRequest);
     }
 } 

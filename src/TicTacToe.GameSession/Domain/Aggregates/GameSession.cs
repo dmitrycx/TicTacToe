@@ -2,8 +2,6 @@ using TicTacToe.GameEngine.Domain.Enums;
 using TicTacToe.GameEngine.Domain.ValueObjects;
 using TicTacToe.GameEngine.Domain.Entities;
 using TicTacToe.GameSession.Domain.Constants;
-using TicTacToe.GameSession.Domain.Services;
-using TicTacToe.GameSession.Infrastructure.External;
 using TicTacToe.GameSession.Endpoints;
 
 namespace TicTacToe.GameSession.Domain.Aggregates;

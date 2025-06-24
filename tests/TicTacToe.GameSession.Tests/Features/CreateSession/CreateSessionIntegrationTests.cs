@@ -1,16 +1,5 @@
-using Xunit;
-using FastEndpoints;
-using FluentAssertions;
-using System.Net;
-using System.Text;
-using System.Text.Json;
 using TicTacToe.GameSession.Endpoints;
 using TicTacToe.GameSession.Tests.Fixtures;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
-using TicTacToe.GameSession.Domain.Aggregates;
-using TicTacToe.GameSession.Domain.Enums;
-using TicTacToe.GameSession.Persistence;
 
 namespace TicTacToe.GameSession.Tests.Features.CreateSession;
 
@@ -21,6 +10,7 @@ public class CreateSessionIntegrationTests(TestFixture fixture) : IClassFixture<
     private readonly JsonSerializerOptions _jsonOptions = new() { PropertyNameCaseInsensitive = true };
 
     [Fact]
+    [Trait("Category", "Integration")]
     public async Task POST_Sessions_ShouldCreateNewSession_WhenValidRequest()
     {
         // Arrange
@@ -42,6 +32,7 @@ public class CreateSessionIntegrationTests(TestFixture fixture) : IClassFixture<
     }
 
     [Fact]
+    [Trait("Category", "Integration")]
     public async Task POST_Sessions_ShouldReturnUniqueSessionIds_WhenMultipleRequests()
     {
         // Arrange
@@ -67,6 +58,7 @@ public class CreateSessionIntegrationTests(TestFixture fixture) : IClassFixture<
     }
 
     [Fact]
+    [Trait("Category", "Integration")]
     public async Task POST_Sessions_ShouldPersistSessionInRepository()
     {
         // Arrange

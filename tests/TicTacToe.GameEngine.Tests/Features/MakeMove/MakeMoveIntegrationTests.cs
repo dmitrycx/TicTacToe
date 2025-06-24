@@ -8,10 +8,6 @@ using TicTacToe.GameEngine.Endpoints;
 using TicTacToe.GameEngine.Persistence;
 using TicTacToe.GameEngine.Tests.Fixtures;
 using TicTacToe.GameEngine.Tests.TestHelpers;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
-using TicTacToe.GameEngine.Domain.Aggregates;
-using TicTacToe.GameEngine.Domain.ValueObjects;
 
 namespace TicTacToe.GameEngine.Tests.Features.MakeMove;
 

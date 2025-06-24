@@ -1,14 +1,7 @@
 using Xunit;
-using FastEndpoints;
 using FluentAssertions;
-using System.Net;
 using System.Text;
 using TicTacToe.GameEngine.Tests.Fixtures;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
-using TicTacToe.GameEngine.Domain.Aggregates;
-using TicTacToe.GameEngine.Domain.Enums;
-using TicTacToe.GameEngine.Persistence;
 
 namespace TicTacToe.GameEngine.Tests.Features.CreateGame;
 
@@ -24,13 +17,13 @@ public class CreateGameConfigurationTests : IClassFixture<TestFixture>
 
     [Fact]
     [Trait("Category", "Unit")]
-    public void POST_Games_ShouldHaveCorrectRoute()
+    public async Task POST_Games_ShouldHaveCorrectRoute()
     {
         // Arrange
         var app = _fixture.CreateClient();
 
         // Act
-        var response = app.PostAsync("/games", new StringContent("{}", Encoding.UTF8, "application/json")).Result;
+        var response = await app.PostAsync("/games", new StringContent("{}", Encoding.UTF8, "application/json"));
 
         // Assert
         response.Should().NotBeNull();
@@ -40,14 +33,14 @@ public class CreateGameConfigurationTests : IClassFixture<TestFixture>
 
     [Fact]
     [Trait("Category", "Unit")]
-    public void POST_Games_ShouldAcceptJsonContent()
+    public async Task POST_Games_ShouldAcceptJsonContent()
     {
         // Arrange
         var app = _fixture.CreateClient();
         var jsonContent = new StringContent("{}", Encoding.UTF8, "application/json");
 
         // Act
-        var response = app.PostAsync("/games", jsonContent).Result;
+        var response = await app.PostAsync("/games", jsonContent);
 
         // Assert
         response.Should().NotBeNull();
@@ -56,14 +49,14 @@ public class CreateGameConfigurationTests : IClassFixture<TestFixture>
 
     [Fact]
     [Trait("Category", "Unit")]
-    public void POST_Games_ShouldReturnJsonResponse()
+    public async Task POST_Games_ShouldReturnJsonResponse()
     {
         // Arrange
         var app = _fixture.CreateClient();
         var jsonContent = new StringContent("{}", Encoding.UTF8, "application/json");
 
         // Act
-        var response = app.PostAsync("/games", jsonContent).Result;
+        var response = await app.PostAsync("/games", jsonContent);
 
         // Assert
         response.Should().NotBeNull();
@@ -72,14 +65,14 @@ public class CreateGameConfigurationTests : IClassFixture<TestFixture>
 
     [Fact]
     [Trait("Category", "Unit")]
-    public void POST_Games_ShouldNotRequireAuthentication()
+    public async Task POST_Games_ShouldNotRequireAuthentication()
     {
         // Arrange
         var app = _fixture.CreateClient();
         var jsonContent = new StringContent("{}", Encoding.UTF8, "application/json");
 
         // Act
-        var response = app.PostAsync("/games", jsonContent).Result;
+        var response = await app.PostAsync("/games", jsonContent);
 
         // Assert
         response.Should().NotBeNull();

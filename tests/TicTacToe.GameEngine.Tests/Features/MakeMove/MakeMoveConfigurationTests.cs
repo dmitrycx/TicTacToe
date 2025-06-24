@@ -1,15 +1,8 @@
 using Xunit;
-using FastEndpoints;
 using FluentAssertions;
 using System.Net;
 using System.Text;
 using TicTacToe.GameEngine.Tests.Fixtures;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
-using TicTacToe.GameEngine.Domain.Aggregates;
-using TicTacToe.GameEngine.Domain.Enums;
-using TicTacToe.GameEngine.Domain.ValueObjects;
-using TicTacToe.GameEngine.Persistence;
 
 namespace TicTacToe.GameEngine.Tests.Features.MakeMove;
 

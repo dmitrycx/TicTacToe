@@ -1,14 +1,6 @@
-using Xunit;
-using FluentAssertions;
 using TicTacToe.GameEngine.Domain.Enums;
 using TicTacToe.GameEngine.Domain.ValueObjects;
-using TicTacToe.GameSession.Domain.Entities;
-using TicTacToe.GameSession.Domain.Enums;
 using TicTacToe.GameSession.Endpoints;
-using TicTacToe.GameSession.Domain.Aggregates;
-using TicTacToe.GameSession.Domain.Exceptions;
-using TicTacToe.GameSession.Persistence;
-using TicTacToe.GameSession.Tests.TestHelpers;
 
 namespace TicTacToe.GameSession.Tests.Features.ListSessions;
 
@@ -23,25 +15,25 @@ public class ListSessionsDomainTests
     public void ToResponse_ShouldMapMultipleSessionsCorrectly()
     {
         // Arrange
-        var sessions = new List<TicTacToe.GameSession.Domain.Aggregates.GameSession>();
+        var sessions = new List<Domain.Aggregates.GameSession>();
         
         // Session 1: Created
-        var session1 = new TicTacToe.GameSession.Domain.Aggregates.GameSession(Guid.NewGuid());
+        var session1 = new Domain.Aggregates.GameSession(Guid.NewGuid());
         sessions.Add(session1);
         
         // Session 2: In Progress with moves
-        var session2 = new TicTacToe.GameSession.Domain.Aggregates.GameSession(Guid.NewGuid());
+        var session2 = new Domain.Aggregates.GameSession(Guid.NewGuid());
         session2.StartSimulation();
-        session2.RecordMove(new Position(0, 0), Player.X);
-        session2.RecordMove(new Position(1, 1), Player.O);
+        session2.RecordMove(Position.Create(0, 0), Player.X);
+        session2.RecordMove(Position.Create(1, 1), Player.O);
         sessions.Add(session2);
         
         // Session 3: Completed with winner
-        var session3 = new TicTacToe.GameSession.Domain.Aggregates.GameSession(Guid.NewGuid());
+        var session3 = new Domain.Aggregates.GameSession(Guid.NewGuid());
         session3.StartSimulation();
-        session3.RecordMove(new Position(0, 0), Player.X);
-        session3.RecordMove(new Position(0, 1), Player.O);
-        session3.RecordMove(new Position(0, 2), Player.X);
+        session3.RecordMove(Position.Create(0, 0), Player.X);
+        session3.RecordMove(Position.Create(0, 1), Player.O);
+        session3.RecordMove(Position.Create(0, 2), Player.X);
         session3.CompleteGame("X");
         sessions.Add(session3);
         
@@ -78,7 +70,7 @@ public class ListSessionsDomainTests
     public void ToResponse_ShouldHandleEmptyList()
     {
         // Arrange
-        var sessions = new List<TicTacToe.GameSession.Domain.Aggregates.GameSession>();
+        var sessions = new List<Domain.Aggregates.GameSession>();
         
         // Act
         var response = sessions.ToResponse();
@@ -92,9 +84,9 @@ public class ListSessionsDomainTests
     public void ToSummary_ShouldMapIndividualSessionCorrectly()
     {
         // Arrange
-        var session = new TicTacToe.GameSession.Domain.Aggregates.GameSession(Guid.NewGuid());
+        var session = new Domain.Aggregates.GameSession(Guid.NewGuid());
         session.StartSimulation();
-        session.RecordMove(new Position(0, 0), Player.X);
+        session.RecordMove(Position.Create(0, 0), Player.X);
         session.CompleteGame("X");
         
         // Act
@@ -113,11 +105,11 @@ public class ListSessionsDomainTests
     public async Task Repository_GetAllAsync_ShouldReturnAllSessions()
     {
         // Arrange
-        var sessions = new List<GameSession>
+        var sessions = new List<Domain.Aggregates.GameSession>
         {
-            GameSession.Create(),
-            GameSession.Create(),
-            GameSession.Create()
+            Domain.Aggregates.GameSession.Create(),
+            Domain.Aggregates.GameSession.Create(),
+            Domain.Aggregates.GameSession.Create()
         };
         
         var mockRepository = new Mock<IGameSessionRepository>();
@@ -139,7 +131,7 @@ public class ListSessionsDomainTests
         // Arrange
         var mockRepository = new Mock<IGameSessionRepository>();
         mockRepository.Setup(r => r.GetAllAsync())
-            .ReturnsAsync(new List<GameSession>());
+            .ReturnsAsync(new List<Domain.Aggregates.GameSession>());
 
         // Act
         var retrievedSessions = await mockRepository.Object.GetAllAsync();

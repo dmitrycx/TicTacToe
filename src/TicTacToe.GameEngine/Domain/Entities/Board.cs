@@ -1,6 +1,5 @@
 using TicTacToe.GameEngine.Domain.Enums;
 using TicTacToe.GameEngine.Domain.ValueObjects;
-using TicTacToe.GameEngine.Domain.Exceptions;
 
 namespace TicTacToe.GameEngine.Domain.Entities;
 

@@ -1,12 +1,3 @@
-using Xunit;
-using FluentAssertions;
-using Moq;
-using TicTacToe.GameSession.Persistence;
-using TicTacToe.GameSession.Tests.TestHelpers;
-using TicTacToe.GameSession.Domain.Aggregates;
-using TicTacToe.GameSession.Domain.Enums;
-using TicTacToe.GameSession.Domain.Exceptions;
-
 namespace TicTacToe.GameSession.Tests.Features.CreateSession;
 
 /// <summary>
@@ -20,13 +11,18 @@ public class CreateSessionDomainTests
     public void GameSession_Create_ShouldInitializeWithCorrectState()
     {
         // Act
-        var session = GameSession.Create();
+        var session = Domain.Aggregates.GameSession.Create();
 
         // Assert
         session.Status.Should().Be(SessionStatus.Created);
         session.CreatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(1));
         session.Id.Should().NotBeEmpty();
         session.Moves.Should().BeEmpty();
+        session.GameId.Should().Be(Guid.Empty); // Default value
+        session.Winner.Should().BeNull();
+        session.StartedAt.Should().BeNull();
+        session.CompletedAt.Should().BeNull();
+        session.Result.Should().BeNull();
     }
 
     [Fact]
@@ -34,11 +30,41 @@ public class CreateSessionDomainTests
     public void GameSession_Create_ShouldGenerateUniqueIds_WhenMultipleSessionsCreated()
     {
         // Act
-        var session1 = GameSession.Create();
-        var session2 = GameSession.Create();
+        var session1 = Domain.Aggregates.GameSession.Create();
+        var session2 = Domain.Aggregates.GameSession.Create();
 
         // Assert
         session1.Id.Should().NotBe(session2.Id);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void GameSession_Create_ShouldRaiseSessionCreatedEvent()
+    {
+        // Arrange & Act
+        var session = Domain.Aggregates.GameSession.Create();
+
+        // Assert
+        session.DomainEvents.Should().HaveCount(1);
+        session.DomainEvents.First().Should().BeOfType<SessionCreatedEvent>();
+        
+        var createdEvent = (SessionCreatedEvent)session.DomainEvents.First();
+        createdEvent.SessionId.Should().Be(session.Id);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void GameSession_Create_ShouldSetCreatedAtToCurrentTime()
+    {
+        // Arrange
+        var beforeCreation = DateTime.UtcNow;
+
+        // Act
+        var session = Domain.Aggregates.GameSession.Create();
+
+        // Assert
+        session.CreatedAt.Should().BeAfter(beforeCreation);
+        session.CreatedAt.Should().BeBefore(DateTime.UtcNow.AddSeconds(1));
     }
 
     [Fact]
@@ -47,17 +73,17 @@ public class CreateSessionDomainTests
     {
         // Arrange
         var mockRepository = new Mock<IGameSessionRepository>();
-        mockRepository.Setup(r => r.SaveAsync(It.IsAny<GameSession>()))
-            .ReturnsAsync((GameSession session) => session);
+        mockRepository.Setup(r => r.SaveAsync(It.IsAny<Domain.Aggregates.GameSession>()))
+            .ReturnsAsync((Domain.Aggregates.GameSession session) => session);
         
-        var session = GameSession.Create();
+        var session = Domain.Aggregates.GameSession.Create();
 
         // Act
         var savedSession = await mockRepository.Object.SaveAsync(session);
 
         // Assert
         savedSession.Should().Be(session);
-        mockRepository.Verify(r => r.SaveAsync(It.IsAny<GameSession>()), Times.Once);
+        mockRepository.Verify(r => r.SaveAsync(It.IsAny<Domain.Aggregates.GameSession>()), Times.Once);
     }
 
     [Fact]
@@ -65,7 +91,7 @@ public class CreateSessionDomainTests
     public async Task Repository_GetByIdAsync_ShouldReturnSession_WhenSessionExists()
     {
         // Arrange
-        var session = GameSession.Create();
+        var session = Domain.Aggregates.GameSession.Create();
         var mockRepository = new Mock<IGameSessionRepository>();
         mockRepository.Setup(r => r.GetByIdAsync(session.Id))
             .ReturnsAsync(session);
@@ -86,7 +112,7 @@ public class CreateSessionDomainTests
         var sessionId = Guid.NewGuid();
         var mockRepository = new Mock<IGameSessionRepository>();
         mockRepository.Setup(r => r.GetByIdAsync(sessionId))
-            .ReturnsAsync((GameSession?)null);
+            .ReturnsAsync((Domain.Aggregates.GameSession?)null);
 
         // Act
         var retrievedSession = await mockRepository.Object.GetByIdAsync(sessionId);
@@ -94,51 +120,5 @@ public class CreateSessionDomainTests
         // Assert
         retrievedSession.Should().BeNull();
         mockRepository.Verify(r => r.GetByIdAsync(sessionId), Times.Once);
-    }
-
-    [Fact]
-    public void GameSession_Create_ShouldCreateNewSessionWithCorrectInitialState()
-    {
-        // Arrange & Act
-        var session = TicTacToe.GameSession.Domain.Aggregates.GameSession.Create();
-
-        // Assert
-        session.Id.Should().NotBeEmpty();
-        session.Status.ToString().Should().Be("Created");
-        session.CreatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(1));
-        session.GameId.Should().Be(Guid.Empty); // Default value
-        session.Winner.Should().BeNull();
-        session.Moves.Should().BeEmpty();
-        session.StartedAt.Should().BeNull();
-        session.CompletedAt.Should().BeNull();
-        session.Result.Should().BeNull();
-    }
-
-    [Fact]
-    public void GameSession_Create_ShouldRaiseSessionCreatedEvent()
-    {
-        // Arrange & Act
-        var session = TicTacToe.GameSession.Domain.Aggregates.GameSession.Create();
-
-        // Assert
-        session.DomainEvents.Should().HaveCount(1);
-        session.DomainEvents.First().Should().BeOfType<TicTacToe.GameSession.Domain.Events.SessionCreatedEvent>();
-        
-        var createdEvent = (TicTacToe.GameSession.Domain.Events.SessionCreatedEvent)session.DomainEvents.First();
-        createdEvent.SessionId.Should().Be(session.Id);
-    }
-
-    [Fact]
-    public void GameSession_Create_ShouldSetCreatedAtToCurrentTime()
-    {
-        // Arrange
-        var beforeCreation = DateTime.UtcNow;
-
-        // Act
-        var session = TicTacToe.GameSession.Domain.Aggregates.GameSession.Create();
-
-        // Assert
-        session.CreatedAt.Should().BeAfter(beforeCreation);
-        session.CreatedAt.Should().BeBefore(DateTime.UtcNow.AddSeconds(1));
     }
 } 

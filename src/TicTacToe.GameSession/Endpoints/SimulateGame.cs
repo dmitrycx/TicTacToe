@@ -1,15 +1,6 @@
 using FastEndpoints;
-using TicTacToe.GameEngine.Domain.Entities;
-using TicTacToe.GameSession.Domain.Aggregates;
-using TicTacToe.GameSession.Domain.Entities;
-using TicTacToe.GameSession.Domain.Enums;
-using TicTacToe.GameEngine.Domain.ValueObjects;
-using TicTacToe.GameEngine.Domain.Enums;
-using TicTacToe.GameSession.Persistence;
-using TicTacToe.GameSession.Infrastructure.External;
 // DTOs now inlined below
 using TicTacToe.GameSession.Domain.Constants;
-using TicTacToe.GameSession.Domain.Services;
 
 namespace TicTacToe.GameSession.Endpoints;
 

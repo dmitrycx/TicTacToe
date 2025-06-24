@@ -1,5 +1,4 @@
 using FastEndpoints;
-using TicTacToe.GameSession.Persistence;
 
 namespace TicTacToe.GameSession.Endpoints;
 

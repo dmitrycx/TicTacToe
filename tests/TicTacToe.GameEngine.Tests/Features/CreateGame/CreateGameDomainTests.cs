@@ -4,8 +4,6 @@ using Moq;
 using TicTacToe.GameEngine.Domain.Aggregates;
 using TicTacToe.GameEngine.Domain.Enums;
 using TicTacToe.GameEngine.Persistence;
-using TicTacToe.GameEngine.Domain.Exceptions;
-using TicTacToe.GameEngine.Domain.ValueObjects;
 
 namespace TicTacToe.GameEngine.Tests.Features.CreateGame;
 

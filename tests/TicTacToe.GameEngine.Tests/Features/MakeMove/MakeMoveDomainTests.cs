@@ -3,8 +3,8 @@ using FluentAssertions;
 using Moq;
 using TicTacToe.GameEngine.Domain.Aggregates;
 using TicTacToe.GameEngine.Domain.Enums;
-using TicTacToe.GameEngine.Domain.ValueObjects;
 using TicTacToe.GameEngine.Domain.Exceptions;
+using TicTacToe.GameEngine.Domain.ValueObjects;
 using TicTacToe.GameEngine.Persistence;
 using TicTacToe.GameEngine.Tests.TestHelpers;
 
@@ -82,7 +82,7 @@ public class MakeMoveDomainTests
         // Act & Assert
         var action = () => game.MakeMove(position);
         action.Should().Throw<InvalidMoveException>()
-            .WithMessage("*Position is already occupied*");
+            .WithMessage("*Cell at position (0, 0) is already occupied*");
     }
 
     [Fact]
@@ -90,31 +90,48 @@ public class MakeMoveDomainTests
     public void Game_MakeMove_ShouldResultInWin_WhenWinningMove()
     {
         // Arrange
-        var game = GameTestHelpers.CreateGameWithWinningMoveAvailable();
+        var game = GameTestHelpers.CreateGameWithMoves(
+            (Player.X, 0, 0), (Player.O, 1, 0),
+            (Player.X, 0, 1), (Player.O, 1, 1)
+        );
+        var winningPosition = Position.Create(0, 2);
 
         // Act
-        game.MakeMove(Position.Create(2, 2));
+        game.MakeMove(winningPosition);
 
         // Assert
-        game.Status.Should().Be(GameStatus.Won);
+        game.Status.Should().Be(GameStatus.Win);
         game.Winner.Should().Be(Player.X);
-        game.CurrentPlayer.Should().Be(Player.O);
+        game.CurrentPlayer.Should().Be(Player.X); // Current player doesn't switch after win
     }
 
     [Fact]
     [Trait("Category", "Unit")]
     public void Game_MakeMove_ShouldResultInDraw_WhenDrawMove()
     {
-        // Arrange
-        var game = GameTestHelpers.CreateGameWithDrawMoveAvailable();
+        // Arrange - Create a draw scenario manually
+        var game = Game.Create();
+        
+        // Make moves to create a draw scenario
+        // This sequence is guaranteed to result in a draw without any player winning prematurely
+        game.MakeMove(Position.Create(0, 0)); // X
+        game.MakeMove(Position.Create(1, 1)); // O
+        game.MakeMove(Position.Create(0, 1)); // X
+        game.MakeMove(Position.Create(0, 2)); // O
+        game.MakeMove(Position.Create(2, 0)); // X
+        game.MakeMove(Position.Create(1, 0)); // O
+        game.MakeMove(Position.Create(1, 2)); // X
+        game.MakeMove(Position.Create(2, 2)); // O
+        
+        var drawPosition = Position.Create(2, 1);
 
         // Act
-        game.MakeMove(Position.Create(2, 2));
+        game.MakeMove(drawPosition);
 
         // Assert
         game.Status.Should().Be(GameStatus.Draw);
         game.Winner.Should().BeNull();
-        game.CurrentPlayer.Should().Be(Player.O);
+        game.CurrentPlayer.Should().Be(Player.X); // Current player doesn't switch after draw
     }
 
     [Fact]
@@ -128,10 +145,10 @@ public class MakeMoveDomainTests
 
         var action = () => Position.Create(3, 1);
         action.Should().Throw<ArgumentException>()
-            .WithMessage("*Row must be between 0 and 2*");
+            .WithMessage("*Position must be within the 3x3 board bounds*");
 
         action = () => Position.Create(1, 3);
         action.Should().Throw<ArgumentException>()
-            .WithMessage("*Column must be between 0 and 2*");
+            .WithMessage("*Position must be within the 3x3 board bounds*");
     }
 } 

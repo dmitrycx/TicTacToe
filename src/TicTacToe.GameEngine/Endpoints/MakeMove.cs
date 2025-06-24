@@ -1,5 +1,4 @@
 using FastEndpoints;
-using TicTacToe.GameEngine.Domain.Aggregates;
 using TicTacToe.GameEngine.Domain.Exceptions;
 using TicTacToe.GameEngine.Domain.ValueObjects;
 using TicTacToe.GameEngine.Persistence;

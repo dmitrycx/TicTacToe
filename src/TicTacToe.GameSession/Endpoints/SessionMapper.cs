@@ -1,5 +1,3 @@
-using TicTacToe.GameSession.Domain.Aggregates;
-
 namespace TicTacToe.GameSession.Endpoints;
 
 /// <summary>

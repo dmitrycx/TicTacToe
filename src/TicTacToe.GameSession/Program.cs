@@ -4,7 +4,6 @@ using Polly.Extensions.Http;
 using FastEndpoints;
 using FastEndpoints.Swagger;
 using System.Text.Json.Serialization;
-using TicTacToe.GameSession.Domain.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 

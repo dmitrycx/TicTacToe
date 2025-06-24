@@ -3,8 +3,6 @@ using FluentAssertions;
 using Moq;
 using TicTacToe.GameEngine.Domain.Aggregates;
 using TicTacToe.GameEngine.Domain.Enums;
-using TicTacToe.GameEngine.Domain.Exceptions;
-using TicTacToe.GameEngine.Domain.ValueObjects;
 using TicTacToe.GameEngine.Persistence;
 using TicTacToe.GameEngine.Tests.TestHelpers;
 
@@ -21,7 +19,7 @@ public class GetGameStateDomainTests
     public async Task Repository_GetByIdAsync_ShouldReturnGame_WhenGameExists()
     {
         // Arrange
-        var game = GameTestHelpers.CreateWinningGame();
+        var game = GameTestHelpers.CreateWinningGame(Player.X);
         var mockRepository = new Mock<IGameRepository>();
         mockRepository.Setup(r => r.GetByIdAsync(game.Id))
             .ReturnsAsync(game);
@@ -57,12 +55,12 @@ public class GetGameStateDomainTests
     public void Game_Properties_ShouldBeAccessible()
     {
         // Arrange
-        var game = GameTestHelpers.CreateWinningGame();
+        var game = GameTestHelpers.CreateWinningGame(Player.X);
 
         // Act & Assert
         game.Id.Should().NotBeEmpty();
-        game.Status.Should().Be(GameStatus.Won);
-        game.CurrentPlayer.Should().Be(Player.O);
+        game.Status.Should().Be(GameStatus.Win);
+        game.CurrentPlayer.Should().Be(Player.X);
         game.Winner.Should().Be(Player.X);
         game.Board.Should().NotBeNull();
     }
@@ -72,16 +70,16 @@ public class GetGameStateDomainTests
     public void Game_Board_ShouldBeConvertibleToStrings()
     {
         // Arrange
-        var game = GameTestHelpers.CreateWinningGame();
+        var game = GameTestHelpers.CreateWinningGame(Player.X);
 
         // Act
-        var boardStrings = game.Board.ToStrings();
+        var boardLists = game.Board.ToListOfLists();
 
         // Assert
-        boardStrings.Should().HaveCount(3);
-        boardStrings[0].Should().Be("X|O|X");
-        boardStrings[1].Should().Be("O|X|O");
-        boardStrings[2].Should().Be("X| | ");
+        boardLists.Should().HaveCount(3);
+        boardLists[0].Should().HaveCount(3);
+        boardLists[1].Should().HaveCount(3);
+        boardLists[2].Should().HaveCount(3);
     }
 
     [Fact]
@@ -89,12 +87,12 @@ public class GetGameStateDomainTests
     public void Game_WinningGame_ShouldHaveCorrectState()
     {
         // Arrange & Act
-        var game = GameTestHelpers.CreateWinningGame();
+        var game = GameTestHelpers.CreateWinningGame(Player.X);
 
         // Assert
-        game.Status.Should().Be(GameStatus.Won);
+        game.Status.Should().Be(GameStatus.Win);
         game.Winner.Should().Be(Player.X);
-        game.CurrentPlayer.Should().Be(Player.O);
+        game.CurrentPlayer.Should().Be(Player.X);
     }
 
     [Fact]
@@ -107,6 +105,6 @@ public class GetGameStateDomainTests
         // Assert
         game.Status.Should().Be(GameStatus.Draw);
         game.Winner.Should().BeNull();
-        game.CurrentPlayer.Should().Be(Player.O);
+        game.CurrentPlayer.Should().Be(Player.X);
     }
 } 

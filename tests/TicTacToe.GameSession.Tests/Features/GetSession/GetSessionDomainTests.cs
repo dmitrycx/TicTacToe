@@ -1,14 +1,6 @@
-using Xunit;
-using FluentAssertions;
 using TicTacToe.GameEngine.Domain.Enums;
 using TicTacToe.GameEngine.Domain.ValueObjects;
-using TicTacToe.GameSession.Domain.Entities;
-using TicTacToe.GameSession.Domain.Enums;
 using TicTacToe.GameSession.Endpoints;
-using TicTacToe.GameSession.Domain.Aggregates;
-using TicTacToe.GameSession.Domain.Exceptions;
-using TicTacToe.GameSession.Persistence;
-using TicTacToe.GameSession.Tests.TestHelpers;
 
 namespace TicTacToe.GameSession.Tests.Features.GetSession;
 
@@ -24,7 +16,7 @@ public class GetSessionDomainTests
     {
         // Arrange
         var gameId = Guid.NewGuid();
-        var session = new TicTacToe.GameSession.Domain.Aggregates.GameSession(gameId);
+        var session = new Domain.Aggregates.GameSession(gameId);
         var createdAt = session.CreatedAt;
         session.StartSimulation();
         var startedAt = session.StartedAt;
@@ -66,7 +58,7 @@ public class GetSessionDomainTests
     public void ToResponse_ShouldHandleNullsCorrectly_ForNewSession()
     {
         // Arrange
-        var session = new TicTacToe.GameSession.Domain.Aggregates.GameSession(Guid.NewGuid());
+        var session = new Domain.Aggregates.GameSession(Guid.NewGuid());
         
         // Act
         var response = session.ToResponse();
@@ -85,7 +77,7 @@ public class GetSessionDomainTests
     public async Task Repository_GetByIdAsync_ShouldReturnSession_WhenSessionExists()
     {
         // Arrange
-        var session = GameSession.Create();
+        var session = Domain.Aggregates.GameSession.Create();
         var mockRepository = new Mock<IGameSessionRepository>();
         mockRepository.Setup(r => r.GetByIdAsync(session.Id))
             .ReturnsAsync(session);
@@ -106,7 +98,7 @@ public class GetSessionDomainTests
         var sessionId = Guid.NewGuid();
         var mockRepository = new Mock<IGameSessionRepository>();
         mockRepository.Setup(r => r.GetByIdAsync(sessionId))
-            .ReturnsAsync((GameSession?)null);
+            .ReturnsAsync((Domain.Aggregates.GameSession?)null);
 
         // Act
         var retrievedSession = await mockRepository.Object.GetByIdAsync(sessionId);
@@ -121,7 +113,7 @@ public class GetSessionDomainTests
     public void GameSession_Properties_ShouldBeAccessible()
     {
         // Arrange
-        var session = GameSession.Create();
+        var session = Domain.Aggregates.GameSession.Create();
 
         // Act & Assert
         session.Id.Should().NotBeEmpty();
