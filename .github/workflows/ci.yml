@@ -71,7 +71,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.x'
+          dotnet-version: '9.0.200'
 
       # STEP 3: Performance optimization - restore NuGet packages from cache
       - name: Cache NuGet packages
@@ -152,7 +152,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.x'
+          dotnet-version: '9.0.200'
       
       # STEP 6: Performance optimization - restore NuGet packages from cache
       - name: Cache NuGet packages
