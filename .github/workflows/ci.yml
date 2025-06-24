@@ -17,6 +17,7 @@
 #   - Intelligent NuGet package caching for faster builds
 #   - Separated test execution (unit vs integration) for efficiency
 #   - Incremental builds with --no-restore optimization
+#   - Artifact sharing between jobs to eliminate redundant builds
 #
 # Quality Features:
 #   - Code coverage collection with XPlat Code Coverage
@@ -107,6 +108,14 @@ jobs:
           path: ./test-results/unit-test-results.trx
           retention-days: 7
 
+      # STEP 8: Upload built solution for reuse in integration job
+      - name: Upload built solution artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: built-solution
+          path: . # Upload the whole directory with built binaries
+          retention-days: 1 # Short retention since it's only needed for the next job
+
   # JOB 2: Security scanning and slower integration tests
   integration-and-security-tests:
     name: Integration & Security Tests
@@ -122,7 +131,7 @@ jobs:
       security-events: write # Allow security scanning results
 
     steps:
-      # STEP 1: Retrieve source code from the repository
+      # STEP 1: Retrieve source code from the repository (needed for security scans)
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -148,34 +157,18 @@ jobs:
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH'
 
-      # STEP 5: Configure .NET 9.0.x development environment
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+      # STEP 5: Download and extract the built solution from the first job
+      - name: Download built solution artifact
+        uses: actions/download-artifact@v4
         with:
-          dotnet-version: '9.0.200'
-      
-      # STEP 6: Performance optimization - restore NuGet packages from cache
-      - name: Cache NuGet packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.nuget/packages
-          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json', '**/*.csproj') }}
-          restore-keys: |
-            ${{ runner.os }}-nuget-
+          name: built-solution
+          path: . # Extract to current directory, replacing source with built version
 
-      # STEP 7: Download project dependencies from NuGet
-      - name: Restore dependencies
-        run: dotnet restore
-        
-      # STEP 8: Compile the solution in Release configuration (safer to rebuild)
-      - name: Build solution
-        run: dotnet build --no-restore --configuration Release
-
-      # STEP 9: Code quality and security analysis
+      # STEP 6: Code quality and security analysis
       - name: Run Security Analysis
         run: dotnet list package --vulnerable
 
-      # STEP 10: Run ONLY the integration tests with coverage collection
+      # STEP 7: Run ONLY the integration tests with coverage collection
       - name: Run integration tests with coverage
         run: >
           dotnet test --no-build --configuration Release
@@ -184,7 +177,7 @@ jobs:
           --results-directory ./test-results/
           --logger "trx;LogFileName=integration-test-results.trx"
 
-      # STEP 11: Publish test results to pull request interface
+      # STEP 8: Publish test results to pull request interface
       - name: Publish Test Results
         uses: dorny/test-reporter@v1
         if: always()
@@ -193,7 +186,7 @@ jobs:
           path: ./test-results/integration-test-results.trx
           reporter: dotnet-trx
 
-      # STEP 12: Upload detailed reports and coverage data for analysis
+      # STEP 9: Upload detailed reports and coverage data for analysis
       - name: Upload test & coverage artifacts
         uses: actions/upload-artifact@v4
         if: always()
@@ -204,7 +197,7 @@ jobs:
             trivy-results.sarif
           retention-days: 7
 
-      # STEP 13: Upload Trivy scan results to GitHub Security tab
+      # STEP 10: Upload Trivy scan results to GitHub Security tab
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
         if: always()
