@@ -1,8 +1,27 @@
 using FastEndpoints;
-using TicTacToe.GameSession.Infrastructure.Persistence;
-using TicTacToe.GameSession.Endpoints.DTOs;
+using TicTacToe.GameSession.Persistence;
 
 namespace TicTacToe.GameSession.Endpoints;
+
+/// <summary>
+/// Response DTO for getting a session.
+/// </summary>
+public record GetSessionResponse(
+    Guid SessionId, 
+    Guid GameId,
+    string Status, 
+    DateTime CreatedAt,
+    DateTime? StartedAt,
+    DateTime? CompletedAt,
+    List<MoveInfo> Moves, 
+    string? Winner,
+    string? Result
+);
+
+/// <summary>
+/// Move information DTO.
+/// </summary>
+public record MoveInfo(int Row, int Column, string Player);
 
 /// <summary>
 /// Request model for getting a session by ID.
@@ -39,18 +58,7 @@ public abstract class GetSessionEndpointBase(IGameSessionRepository repository)
             return;
         }
 
-        var response = new GetSessionResponse(
-            session.Id,
-            session.GameId,
-            session.Status.ToString(),
-            session.CreatedAt,
-            session.StartedAt,
-            session.CompletedAt,
-            session.Moves.Select(m => new MoveInfo(m.Position.Row, m.Position.Column, m.Player.ToString())).ToList(),
-            session.Winner?.ToString(),
-            session.Result?.ToString()
-        );
-
+        var response = session.ToResponse();
         await SendAsync(response, 200, ct);
     }
 }

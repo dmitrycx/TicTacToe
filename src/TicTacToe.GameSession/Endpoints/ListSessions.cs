@@ -1,6 +1,5 @@
 using FastEndpoints;
-using TicTacToe.GameSession.Infrastructure.Persistence;
-using TicTacToe.GameSession.Endpoints.DTOs;
+using TicTacToe.GameSession.Persistence;
 
 namespace TicTacToe.GameSession.Endpoints;
 
@@ -34,15 +33,7 @@ public abstract class ListSessionsEndpointBase(IGameSessionRepository repository
     {
         var sessions = await repository.GetAllAsync();
         
-        var sessionSummaries = sessions.Select(s => new SessionSummary(
-            s.Id,
-            s.Status.ToString(),
-            s.CreatedAt,
-            s.Moves.Count,
-            s.Winner
-        )).ToList();
-
-        var response = new ListSessionsResponse(sessionSummaries);
+        var response = sessions.ToResponse();
         await SendAsync(response, 200, ct);
     }
 }
