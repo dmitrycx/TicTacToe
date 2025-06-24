@@ -163,27 +163,40 @@ jobs:
         with:
           dotnet-version: '9.0.200'
 
-      # STEP 6: Download and extract the built solution from the first job
+      # STEP 6: Performance optimization - restore NuGet packages from cache
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json', '**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      # STEP 7: Download and extract the built solution from the first job
       - name: Download built solution artifact
         uses: actions/download-artifact@v4
         with:
           name: built-solution
           path: . # Extract to current directory, replacing source with built version
 
-      # STEP 7: Code quality and security analysis
+      # STEP 8: Restore dependencies (to sync build state after artifact download)
+      - name: Restore dependencies
+        run: dotnet restore
+
+      # STEP 9: Code quality and security analysis
       - name: Run Security Analysis
         run: dotnet list package --vulnerable
 
-      # STEP 8: Run ONLY the integration tests with coverage collection
+      # STEP 10: Run ONLY the integration tests with coverage collection
       - name: Run integration tests with coverage
         run: >
-          dotnet test --no-build --configuration Release
+          dotnet test --no-build --no-restore --configuration Release
           --filter "Category=Integration"
           --collect:"XPlat Code Coverage"
           --results-directory ./test-results/
           --logger "trx;LogFileName=integration-test-results.trx"
 
-      # STEP 9: Publish test results to pull request interface
+      # STEP 11: Publish test results to pull request interface
       - name: Publish Test Results
         uses: dorny/test-reporter@v1
         if: always()
@@ -192,7 +205,7 @@ jobs:
           path: ./test-results/integration-test-results.trx
           reporter: dotnet-trx
 
-      # STEP 10: Upload detailed reports and coverage data for analysis
+      # STEP 12: Upload detailed reports and coverage data for analysis
       - name: Upload test & coverage artifacts
         uses: actions/upload-artifact@v4
         if: always()
@@ -203,7 +216,7 @@ jobs:
             trivy-results.sarif
           retention-days: 7
 
-      # STEP 11: Upload Trivy scan results to GitHub Security tab
+      # STEP 13: Upload Trivy scan results to GitHub Security tab
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
         if: always()
