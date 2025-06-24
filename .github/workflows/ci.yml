@@ -157,18 +157,24 @@ jobs:
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH'
 
-      # STEP 5: Download and extract the built solution from the first job
+      # STEP 5: Configure .NET 9.0.x development environment (needed for test execution)
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.200'
+
+      # STEP 6: Download and extract the built solution from the first job
       - name: Download built solution artifact
         uses: actions/download-artifact@v4
         with:
           name: built-solution
           path: . # Extract to current directory, replacing source with built version
 
-      # STEP 6: Code quality and security analysis
+      # STEP 7: Code quality and security analysis
       - name: Run Security Analysis
         run: dotnet list package --vulnerable
 
-      # STEP 7: Run ONLY the integration tests with coverage collection
+      # STEP 8: Run ONLY the integration tests with coverage collection
       - name: Run integration tests with coverage
         run: >
           dotnet test --no-build --configuration Release
@@ -177,7 +183,7 @@ jobs:
           --results-directory ./test-results/
           --logger "trx;LogFileName=integration-test-results.trx"
 
-      # STEP 8: Publish test results to pull request interface
+      # STEP 9: Publish test results to pull request interface
       - name: Publish Test Results
         uses: dorny/test-reporter@v1
         if: always()
@@ -186,7 +192,7 @@ jobs:
           path: ./test-results/integration-test-results.trx
           reporter: dotnet-trx
 
-      # STEP 9: Upload detailed reports and coverage data for analysis
+      # STEP 10: Upload detailed reports and coverage data for analysis
       - name: Upload test & coverage artifacts
         uses: actions/upload-artifact@v4
         if: always()
@@ -197,7 +203,7 @@ jobs:
             trivy-results.sarif
           retention-days: 7
 
-      # STEP 10: Upload Trivy scan results to GitHub Security tab
+      # STEP 11: Upload Trivy scan results to GitHub Security tab
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
         if: always()
