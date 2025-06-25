@@ -1,69 +1,88 @@
-using TicTacToe.GameEngine.Domain.Aggregates;
+using FastEndpoints;
 using TicTacToe.GameEngine.Domain.Exceptions;
 using TicTacToe.GameEngine.Domain.ValueObjects;
-using TicTacToe.GameEngine.Endpoints.DTOs;
 using TicTacToe.GameEngine.Persistence;
 
 namespace TicTacToe.GameEngine.Endpoints;
 
 /// <summary>
-/// Handles making moves in a Tic Tac Toe game.
+/// Request model for making a move.
 /// </summary>
-/// <remarks>
-/// This endpoint processes a move request for a specific game. It validates the move,
-/// updates the game state, checks for win/draw conditions, and persists the changes.
-/// The endpoint handles various error conditions including invalid positions, occupied cells,
-/// and moves on completed games.
-/// </remarks>
-public static class MakeMove
+public class MakeMoveRequest
 {
-    /// <summary>
-    /// Makes a move in the specified Tic Tac Toe game.
-    /// </summary>
-    /// <param name="gameId">The unique identifier of the game.</param>
-    /// <param name="request">The move request containing the row and column coordinates.</param>
-    /// <param name="repository">The game repository for retrieving and persisting the game.</param>
-    /// <returns>
-    /// An OK (200) response with the updated game state if the move is valid;
-    /// a Bad Request (400) response if the move is invalid;
-    /// a Not Found (404) response if the game doesn't exist.
-    /// </returns>
-    public static async Task<IResult> HandleAsync(
-        Guid gameId,
-        MakeMoveRequest request,
-        IGameRepository repository)
+    public Guid GameId { get; set; }
+    public int Row { get; set; }
+    public int Column { get; set; }
+}
+
+/// <summary>
+/// Endpoint for making moves in a Tic Tac Toe game.
+/// </summary>
+public abstract class MakeMoveEndpointBase(IGameRepository repository) : Endpoint<MakeMoveRequest, GameStateResponse>
+{
+    public override void Configure()
     {
-        var game = await repository.GetByIdAsync(gameId);
+        Post("/games/{GameId:guid}/move");
+        AllowAnonymous();
+        Summary(s =>
+        {
+            s.Summary = "Makes a move in a Tic Tac Toe game.";
+            s.Description = "Processes a move request for a specific game. It validates the move, updates the game state, checks for win/draw conditions, and persists the changes.";
+            s.Response<GameStateResponse>(200, "The updated game state.");
+            s.Response(400, "Invalid move (position occupied, out of bounds, or game completed).");
+            s.Response(404, "Game not found.");
+        });
+    }
+
+    public override async Task HandleAsync(MakeMoveRequest req, CancellationToken ct)
+    {
+        var game = await repository.GetByIdAsync(req.GameId);
         
         if (game == null)
         {
-            return Results.NotFound();
+            await SendNotFoundAsync(ct);
+            return;
         }
 
         try
         {
-            var position = Position.Create(request.Row, request.Column);
+            var position = Position.Create(req.Row, req.Column);
             game.MakeMove(position);
             await repository.SaveAsync(game);
 
             var response = new GameStateResponse(
                 game.Id,
-                game.Status,
-                game.CurrentPlayer,
-                game.Winner,
-                game.Board.ToListOfLists(),
+                game.Status.ToString(),
+                game.CurrentPlayer.ToString(),
+                game.Winner?.ToString(),
+                ConvertBoardToStrings(game.Board.ToListOfLists()),
                 game.CreatedAt,
                 game.LastMoveAt);
 
-            return Results.Ok(response);
+            await SendAsync(response, 200, ct);
         }
         catch (InvalidMoveException ex)
         {
-            return Results.BadRequest(new { error = ex.Message });
+            AddError(ex.Message);
+            await SendErrorsAsync(400, ct);
         }
         catch (ArgumentException ex)
         {
-            return Results.BadRequest(new { error = ex.Message });
+            AddError(ex.Message);
+            await SendErrorsAsync(400, ct);
         }
     }
+
+    private static List<List<string>> ConvertBoardToStrings(List<List<Domain.Enums.Player?>> board)
+    {
+        return board.Select(row => 
+            row.Select(cell => cell?.ToString() ?? "").ToList()
+        ).ToList();
+    }
+}
+
+// Concrete implementation for FastEndpoints discovery
+public class MakeMoveEndpoint : MakeMoveEndpointBase
+{
+    public MakeMoveEndpoint(IGameRepository repository) : base(repository) { }
 } 

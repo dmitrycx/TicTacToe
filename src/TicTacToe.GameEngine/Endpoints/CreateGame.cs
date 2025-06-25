@@ -1,39 +1,47 @@
+using FastEndpoints;
 using TicTacToe.GameEngine.Domain.Aggregates;
-using TicTacToe.GameEngine.Endpoints.DTOs;
 using TicTacToe.GameEngine.Persistence;
 
 namespace TicTacToe.GameEngine.Endpoints;
 
 /// <summary>
-/// Handles the creation of new Tic Tac Toe games.
+/// Response model for creating a game.
 /// </summary>
-/// <remarks>
-/// This endpoint creates a new game with an empty board and initializes it with Player X as the first player.
-/// The game is immediately persisted in the repository and a unique identifier is generated.
-/// </remarks>
-public static class CreateGame
+public record CreateGameResponse(Guid GameId, string Status, string CurrentPlayer);
+
+/// <summary>
+/// Endpoint for creating new Tic Tac Toe games.
+/// </summary>
+public abstract class CreateGameEndpointBase(IGameRepository repository) : EndpointWithoutRequest<CreateGameResponse>
 {
-    /// <summary>
-    /// Creates a new Tic Tac Toe game and returns the game details.
-    /// </summary>
-    /// <param name="request">The create game request (currently empty as no parameters are needed).</param>
-    /// <param name="repository">The game repository for persisting the new game.</param>
-    /// <returns>
-    /// A Created (201) response with the new game details including the game ID, status, and current player.
-    /// The response includes a Location header pointing to the created game resource.
-    /// </returns>
-    public static async Task<IResult> HandleAsync(
-        CreateGameRequest request,
-        IGameRepository repository)
+    public override void Configure()
+    {
+        Post("/games");
+        AllowAnonymous();
+        Summary(s =>
+        {
+            s.Summary = "Creates a new Tic Tac Toe game.";
+            s.Description = "Creates a new game with an empty board and initializes it with Player X as the first player. The game is immediately persisted in the repository and a unique identifier is generated.";
+            s.Response<CreateGameResponse>(201, "The created game details.");
+        });
+    }
+
+    public override async Task HandleAsync(CancellationToken ct)
     {
         var game = Game.Create();
         await repository.SaveAsync(game);
 
         var response = new CreateGameResponse(
             game.Id,
-            game.Status,
-            game.CurrentPlayer);
+            game.Status.ToString(),
+            game.CurrentPlayer.ToString());
 
-        return Results.Created($"/games/{game.Id}", response);
+        await SendAsync(response, 201, ct);
     }
+}
+
+// Concrete implementation for FastEndpoints discovery
+public class CreateGameEndpoint : CreateGameEndpointBase
+{
+    public CreateGameEndpoint(IGameRepository repository) : base(repository) { }
 } 

@@ -1,48 +1,78 @@
-using TicTacToe.GameEngine.Domain.ValueObjects;
-using TicTacToe.GameEngine.Endpoints.DTOs;
+using FastEndpoints;
 using TicTacToe.GameEngine.Persistence;
 
 namespace TicTacToe.GameEngine.Endpoints;
 
 /// <summary>
-/// Handles retrieval of the current state of a Tic Tac Toe game.
+/// Request model for getting game state.
 /// </summary>
-/// <remarks>
-/// This endpoint retrieves the complete game state including the board layout, current player,
-/// game status, winner (if any), and timestamps. The board is returned as a flat list for
-/// easy serialization and consumption by clients.
-/// </remarks>
-public static class GetGameState
+public class GetGameStateRequest
 {
-    /// <summary>
-    /// Retrieves the current state of a Tic Tac Toe game by its unique identifier.
-    /// </summary>
-    /// <param name="gameId">The unique identifier of the game to retrieve.</param>
-    /// <param name="repository">The game repository for retrieving the game.</param>
-    /// <returns>
-    /// An OK (200) response with the complete game state if the game exists;
-    /// otherwise, a Not Found (404) response.
-    /// </returns>
-    public static async Task<IResult> HandleAsync(
-        Guid gameId,
-        IGameRepository repository)
+    public Guid GameId { get; set; }
+}
+
+/// <summary>
+/// Response model for game state.
+/// </summary>
+public record GameStateResponse(
+    Guid GameId,
+    string Status,
+    string CurrentPlayer,
+    string? Winner,
+    List<List<string>> Board,
+    DateTime CreatedAt,
+    DateTime? LastMoveAt);
+
+/// <summary>
+/// Endpoint for retrieving the current state of a Tic Tac Toe game.
+/// </summary>
+public abstract class GetGameStateEndpointBase(IGameRepository repository) : Endpoint<GetGameStateRequest, GameStateResponse>
+{
+    public override void Configure()
     {
-        var game = await repository.GetByIdAsync(gameId);
+        Get("/games/{GameId:guid}");
+        AllowAnonymous();
+        Summary(s =>
+        {
+            s.Summary = "Retrieves the current state of a Tic Tac Toe game.";
+            s.Description = "Returns the complete game state including the board, current player, game status, and winner (if any).";
+            s.Response<GameStateResponse>(200, "The current game state.");
+            s.Response(404, "Game not found.");
+        });
+    }
+
+    public override async Task HandleAsync(GetGameStateRequest req, CancellationToken ct)
+    {
+        var game = await repository.GetByIdAsync(req.GameId);
         
         if (game == null)
         {
-            return Results.NotFound();
+            await SendNotFoundAsync(ct);
+            return;
         }
 
         var response = new GameStateResponse(
             game.Id,
-            game.Status,
-            game.CurrentPlayer,
-            game.Winner,
-            game.Board.ToListOfLists(),
+            game.Status.ToString(),
+            game.CurrentPlayer.ToString(),
+            game.Winner?.ToString(),
+            ConvertBoardToStrings(game.Board.ToListOfLists()),
             game.CreatedAt,
             game.LastMoveAt);
 
-        return Results.Ok(response);
+        await SendAsync(response, 200, ct);
     }
+
+    private static List<List<string>> ConvertBoardToStrings(List<List<Domain.Enums.Player?>> board)
+    {
+        return board.Select(row => 
+            row.Select(cell => cell?.ToString() ?? "").ToList()
+        ).ToList();
+    }
+}
+
+// Concrete implementation for FastEndpoints discovery
+public class GetGameStateEndpoint : GetGameStateEndpointBase
+{
+    public GetGameStateEndpoint(IGameRepository repository) : base(repository) { }
 } 

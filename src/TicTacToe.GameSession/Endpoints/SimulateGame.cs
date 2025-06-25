@@ -1,18 +1,35 @@
 using FastEndpoints;
-using TicTacToe.GameEngine.Domain.Entities;
-using TicTacToe.GameSession.Domain.Aggregates;
-using TicTacToe.GameSession.Domain.Entities;
-using TicTacToe.GameSession.Domain.Enums;
-using TicTacToe.GameEngine.Domain.ValueObjects;
-using TicTacToe.GameEngine.Domain.Enums;
-using TicTacToe.GameSession.Infrastructure.Persistence;
-using TicTacToe.GameSession.Infrastructure.External;
-using TicTacToe.GameSession.Infrastructure.External.DTOs;
-using TicTacToe.GameSession.Endpoints.DTOs;
+// DTOs now inlined below
 using TicTacToe.GameSession.Domain.Constants;
-using TicTacToe.GameSession.Domain.Services;
 
 namespace TicTacToe.GameSession.Endpoints;
+
+/// <summary>
+/// Response from creating a new game in the Game Engine Service.
+/// </summary>
+public record CreateGameResponse(Guid GameId, DateTime CreatedAt);
+
+/// <summary>
+/// Response containing the current game state from the Game Engine Service.
+/// </summary>
+public record GameStateResponse(
+    Guid GameId,
+    string Status,
+    string CurrentPlayer,
+    string? Winner,
+    List<List<string?>> Board,
+    DateTime CreatedAt,
+    DateTime? LastMoveAt);
+
+/// <summary>
+/// Request for making a move in the Game Engine Service.
+/// </summary>
+public record MakeMoveRequest(int Row, int Column);
+
+/// <summary>
+/// Response DTO for game simulation.
+/// </summary>
+public record SimulateGameResponse(Guid SessionId, bool IsCompleted, string? Winner, List<MoveInfo> Moves);
 
 /// <summary>
 /// Request model for simulating a game.
@@ -63,52 +80,14 @@ public abstract class SimulateGameEndpointBase(
 
         try
         {
-            // Start simulation
-            session.StartSimulation();
-            await repository.SaveAsync(session);
-
-            // Create game in Game Engine
-            var createGameResponse = await gameEngineClient.CreateGameAsync();
-            session.SetGameId(createGameResponse.GameId);
-            await repository.SaveAsync(session);
-            
             // Get the move generator for the specified strategy
             var moveGenerator = moveGeneratorFactory.CreateGenerator(req.MoveStrategy ?? MoveType.Random);
             
-            // Simulate moves until game is complete
-            var moves = new List<MoveInfo>();
-            var currentPlayer = Player.X;
+            // Simulate the game using the domain method
+            var moves = await session.SimulateAsync(gameEngineClient, moveGenerator, req.MoveStrategy ?? MoveType.Random);
             
-            while (session.Status == SessionStatus.InProgress)
-            {
-                // Get current game state from Game Engine
-                var gameState = await gameEngineClient.GetGameStateAsync(session.GameId);
-                var board = Board.FromStringRepresentation(gameState.Board);
-                
-                // Generate move using the selected strategy
-                var position = moveGenerator.GenerateMove(currentPlayer, board);
-                
-                // Make move in Game Engine
-                var moveRequest = new MakeMoveRequest(position.Row, position.Column);
-                gameState = await gameEngineClient.MakeMoveAsync(session.GameId, moveRequest);
-                
-                // Record move in session
-                session.RecordMove(position, currentPlayer);
-                await repository.SaveAsync(session);
-                
-                moves.Add(new MoveInfo(position.Row, position.Column, currentPlayer.ToString()));
-
-                // Check if game is complete
-                if (gameState.Status == SessionConstants.Status.Completed)
-                {
-                    session.CompleteGame(gameState.Winner);
-                    await repository.SaveAsync(session);
-                    break;
-                }
-
-                // Switch players
-                currentPlayer = currentPlayer == Player.X ? Player.O : Player.X;
-            }
+            // Save the updated session
+            await repository.SaveAsync(session);
 
             var response = new SimulateGameResponse(
                 session.Id,
@@ -122,7 +101,6 @@ public abstract class SimulateGameEndpointBase(
         catch (Exception)
         {
             // Handle any errors during simulation
-            session.FailSimulation();
             await repository.SaveAsync(session);
             AddError(SessionConstants.ErrorMessages.SimulationFailed);
             await SendErrorsAsync(500, ct);

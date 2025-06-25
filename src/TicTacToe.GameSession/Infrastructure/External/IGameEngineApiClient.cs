@@ -1,3 +1,5 @@
+using TicTacToe.GameSession.Endpoints;
+
 namespace TicTacToe.GameSession.Infrastructure.External;
 
 /// <summary>

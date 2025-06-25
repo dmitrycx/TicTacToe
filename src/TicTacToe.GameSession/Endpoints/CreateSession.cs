@@ -1,9 +1,11 @@
 using FastEndpoints;
-using TicTacToe.GameSession.Domain.Aggregates;
-using TicTacToe.GameSession.Infrastructure.Persistence;
-using TicTacToe.GameSession.Endpoints.DTOs;
 
 namespace TicTacToe.GameSession.Endpoints;
+
+/// <summary>
+/// Response DTO for creating a session.
+/// </summary>
+public record CreateSessionResponse(Guid SessionId, string Status);
 
 /// <summary>
 /// Endpoint for creating a new game session.

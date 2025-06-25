@@ -1,8 +1,12 @@
-using TicTacToe.GameEngine.Endpoints;
-using TicTacToe.GameEngine.Endpoints.DTOs;
+using FastEndpoints;
+using FastEndpoints.Swagger;
 using TicTacToe.GameEngine.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// FastEndpoints registration
+builder.Services.AddFastEndpoints();
+builder.Services.SwaggerDocument();
 
 // Add services to the container
 builder.Services.AddSingleton<IGameRepository, InMemoryGameRepository>();
@@ -28,10 +32,11 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors();
 
-// Map endpoints
-app.MapPost("/games", CreateGame.HandleAsync);
-app.MapGet("/games/{gameId:guid}", GetGameState.HandleAsync);
-app.MapPost("/games/{gameId:guid}/move", MakeMove.HandleAsync);
+// FastEndpoints
+app.UseFastEndpoints();
+app.UseSwaggerGen();
+
+app.UseHttpsRedirection();
 
 app.Run();
 

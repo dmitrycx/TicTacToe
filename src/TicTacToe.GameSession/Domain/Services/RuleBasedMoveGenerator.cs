@@ -1,7 +1,6 @@
 using TicTacToe.GameEngine.Domain.Entities;
 using TicTacToe.GameEngine.Domain.Enums;
 using TicTacToe.GameEngine.Domain.ValueObjects;
-using TicTacToe.GameSession.Domain.Enums;
 
 namespace TicTacToe.GameSession.Domain.Services;
 

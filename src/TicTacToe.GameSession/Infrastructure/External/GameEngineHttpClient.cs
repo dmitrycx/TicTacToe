@@ -1,7 +1,5 @@
-using System.Text;
 using System.Text.Json;
-using Microsoft.Extensions.Options;
-using System.Net.Http.Json;
+using TicTacToe.GameSession.Endpoints;
 
 namespace TicTacToe.GameSession.Infrastructure.External;
 

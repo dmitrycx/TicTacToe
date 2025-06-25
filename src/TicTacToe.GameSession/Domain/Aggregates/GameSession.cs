@@ -1,6 +1,8 @@
 using TicTacToe.GameEngine.Domain.Enums;
 using TicTacToe.GameEngine.Domain.ValueObjects;
+using TicTacToe.GameEngine.Domain.Entities;
 using TicTacToe.GameSession.Domain.Constants;
+using TicTacToe.GameSession.Endpoints;
 
 namespace TicTacToe.GameSession.Domain.Aggregates;
 
@@ -218,6 +220,75 @@ public class GameSession
     public void ClearDomainEvents()
     {
         _domainEvents.Clear();
+    }
+
+    /// <summary>
+    /// Simulates a complete game using the provided dependencies.
+    /// </summary>
+    /// <param name="gameEngineClient">The game engine API client.</param>
+    /// <param name="moveGenerator">The move generator.</param>
+    /// <param name="moveStrategy">The move strategy to use.</param>
+    /// <returns>The list of moves made during the simulation.</returns>
+    public async Task<List<MoveInfo>> SimulateAsync(
+        IGameEngineApiClient gameEngineClient, 
+        IMoveGenerator moveGenerator,
+        MoveType moveStrategy = MoveType.Random)
+    {
+        if (Status != SessionStatus.Created)
+        {
+            throw new InvalidSessionStateException(string.Format(SessionConstants.ErrorMessages.CannotStartSimulation, Status));
+        }
+
+        try
+        {
+            // Start simulation
+            StartSimulation();
+
+            // Create game in Game Engine
+            var createGameResponse = await gameEngineClient.CreateGameAsync();
+            SetGameId(createGameResponse.GameId);
+            
+            // Simulate moves until game is complete
+            var moves = new List<MoveInfo>();
+            var currentPlayer = Player.X;
+            
+            while (Status == SessionStatus.InProgress)
+            {
+                // Get current game state from Game Engine
+                var gameState = await gameEngineClient.GetGameStateAsync(GameId);
+                var board = Board.FromStringRepresentation(gameState.Board);
+                
+                // Generate move using the selected strategy
+                var position = moveGenerator.GenerateMove(currentPlayer, board);
+                
+                // Make move in Game Engine
+                var moveRequest = new MakeMoveRequest(position.Row, position.Column);
+                gameState = await gameEngineClient.MakeMoveAsync(GameId, moveRequest);
+                
+                // Record move in session
+                RecordMove(position, currentPlayer);
+                
+                moves.Add(new MoveInfo(position.Row, position.Column, currentPlayer.ToString()));
+
+                // Check if game is complete
+                if (gameState.Status == SessionConstants.Status.Completed)
+                {
+                    CompleteGame(gameState.Winner);
+                    break;
+                }
+
+                // Switch players
+                currentPlayer = currentPlayer == Player.X ? Player.O : Player.X;
+            }
+
+            return moves;
+        }
+        catch (Exception)
+        {
+            // Handle any errors during simulation
+            FailSimulation();
+            throw;
+        }
     }
 
     // Private constructor for EF Core

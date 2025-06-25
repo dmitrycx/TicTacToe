@@ -1,6 +1,5 @@
 using TicTacToe.GameEngine.Domain.Enums;
 using TicTacToe.GameEngine.Domain.ValueObjects;
-using TicTacToe.GameEngine.Domain.Exceptions;
 
 namespace TicTacToe.GameEngine.Domain.Entities;
 
@@ -22,10 +21,10 @@ public class Board
     {
         var board = new Board();
         
-        for (int row = 0; row < 3 && row < boardState.Count; row++)
+        for (var row = 0; row < 3 && row < boardState.Count; row++)
         {
             var rowList = boardState[row];
-            for (int col = 0; col < 3 && col < rowList.Count; col++)
+            for (var col = 0; col < 3 && col < rowList.Count; col++)
             {
                 var cellValue = rowList[col];
                 if (!string.IsNullOrEmpty(cellValue))
@@ -43,9 +42,9 @@ public class Board
 
     public bool IsEmpty()
     {
-        for (int row = 0; row < 3; row++)
+        for (var row = 0; row < 3; row++)
         {
-            for (int col = 0; col < 3; col++)
+            for (var col = 0; col < 3; col++)
             {
                 if (_cells[row, col].HasValue)
                     return false;
@@ -94,9 +93,9 @@ public class Board
 
     public bool IsFull()
     {
-        for (int row = 0; row < 3; row++)
+        for (var row = 0; row < 3; row++)
         {
-            for (int col = 0; col < 3; col++)
+            for (var col = 0; col < 3; col++)
             {
                 if (!_cells[row, col].HasValue)
                     return false;
@@ -121,10 +120,10 @@ public class Board
     public List<List<Player?>> ToListOfLists()
     {
         var listOfLists = new List<List<Player?>>(3);
-        for (int row = 0; row < 3; row++)
+        for (var row = 0; row < 3; row++)
         {
             var rowList = new List<Player?>(3);
-            for (int col = 0; col < 3; col++)
+            for (var col = 0; col < 3; col++)
             {
                 rowList.Add(_cells[row, col]);
             }

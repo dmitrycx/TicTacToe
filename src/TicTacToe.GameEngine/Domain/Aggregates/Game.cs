@@ -96,13 +96,13 @@ public class Game
     private bool HasWinner()
     {
         // Check rows
-        for (int row = 0; row < 3; row++)
+        for (var row = 0; row < 3; row++)
         {
             if (CheckLine(row, 0, 0, 1)) return true;
         }
 
         // Check columns
-        for (int col = 0; col < 3; col++)
+        for (var col = 0; col < 3; col++)
         {
             if (CheckLine(0, col, 1, 0)) return true;
         }
@@ -119,7 +119,7 @@ public class Game
         var firstCell = Board.GetCell(Position.Create(startRow, startCol));
         if (!firstCell.HasValue) return false;
 
-        for (int i = 1; i < 3; i++)
+        for (var i = 1; i < 3; i++)
         {
             var currentCell = Board.GetCell(Position.Create(startRow + i * deltaRow, startCol + i * deltaCol));
             if (currentCell != firstCell) return false;
