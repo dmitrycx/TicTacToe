@@ -13,7 +13,7 @@ public class Board
     }
 
     /// <summary>
-    /// Creates a Board from a string representation (List<List<string?>>).
+    /// Creates a Board from a string representation (List&lt;List&lt;string?&gt;&gt;).
     /// </summary>
     /// <param name="boardState">The board state as a jagged array of strings.</param>
     /// <returns>A new Board instance with the specified state.</returns>

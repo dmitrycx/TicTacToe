@@ -234,11 +234,11 @@ jobs:
           EOF
 
           # 2. Start the services in the background
-          docker-compose -f docker-compose.ci.yml up -d
+          docker compose -f docker-compose.ci.yml up -d
 
           # 3. Wait for services to be healthy before running tests
           echo "Waiting for services to become healthy..."
-          timeout 60 bash -c 'until docker-compose -f docker-compose.ci.yml ps | grep -q "healthy"; do sleep 5; done' || echo "Services may not be fully healthy, proceeding with tests"
+          timeout 60 bash -c 'until docker compose -f docker-compose.ci.yml ps | grep -q "healthy"; do sleep 5; done' || echo "Services may not be fully healthy, proceeding with tests"
 
           # 4. Set up .NET environment to run the test project
           # Note: We are NOT building the main apps, just the test project
@@ -253,7 +253,7 @@ jobs:
       - name: Stop containers
         if: always() # This step runs even if the tests fail
         run: |
-          docker-compose -f docker-compose.ci.yml down
+          docker compose -f docker-compose.ci.yml down
 
       # --- Reporting Stage ---
       # STEP 12: Publish test results to pull request interface
