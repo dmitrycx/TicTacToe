@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Aspire.Hosting" Version="9.3.2" />
     <PackageReference Include="FastEndpoints" Version="6.2.0" />
     <PackageReference Include="FastEndpoints.Swagger" Version="6.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.2" />
@@ -18,6 +19,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\TicTacToe.GameEngine\TicTacToe.GameEngine.csproj" />
+    <ProjectReference Include="..\..\TicTacToe.ServiceDefaults\TicTacToe.ServiceDefaults.csproj" />
   </ItemGroup>
 
   <ItemGroup>

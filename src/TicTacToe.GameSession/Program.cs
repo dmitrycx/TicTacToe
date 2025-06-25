@@ -1,11 +1,11 @@
 using Microsoft.Extensions.Options;
-using Polly;
-using Polly.Extensions.Http;
 using FastEndpoints;
 using FastEndpoints.Swagger;
 using System.Text.Json.Serialization;
+using Microsoft.Extensions.ServiceDiscovery;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.AddServiceDefaults();
 
 // Load session-specific configuration files
 builder.Configuration
@@ -24,12 +24,6 @@ builder.Services.Configure<Microsoft.AspNetCore.Http.Json.JsonOptions>(options =
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
 });
 
-// Configuration with Validation
-builder.Services.AddOptions<GameEngineSettings>()
-    .Bind(builder.Configuration.GetSection("GameEngine"))
-    .ValidateDataAnnotations()
-    .ValidateOnStart();
-
 // Infrastructure Services
 builder.Services.AddSingleton<IGameSessionRepository, InMemoryGameSessionRepository>();
 
@@ -38,17 +32,11 @@ builder.Services.AddSingleton<IMoveGenerator, RandomMoveGenerator>();
 builder.Services.AddSingleton<IMoveGenerator, RuleBasedMoveGenerator>();
 builder.Services.AddSingleton<IMoveGeneratorFactory, MoveGeneratorFactory>();
 
-// HTTP Client with Resilience (Polly)
-builder.Services.AddHttpClient<IGameEngineApiClient, GameEngineHttpClient>((serviceProvider, client) =>
+// HTTP Client with Aspire service discovery and built-in resilience
+builder.Services.AddHttpClient<IGameEngineApiClient, GameEngineHttpClient>(client =>
 {
-    var settings = serviceProvider.GetRequiredService<IOptions<GameEngineSettings>>().Value;
-    client.BaseAddress = new Uri(settings.BaseUrl);
-    client.Timeout = TimeSpan.FromSeconds(settings.TimeoutSeconds);
-})
-.AddPolicyHandler(GetRetryPolicy());
-
-// Add health checks
-builder.Services.AddHealthChecks();
+    client.BaseAddress = new Uri("http://gameengine");
+});
 
 var app = builder.Build();
 
@@ -58,22 +46,9 @@ app.UseSwaggerGen();
 
 app.UseHttpsRedirection();
 
-// Health check endpoint
-app.MapHealthChecks("/health");
+app.MapDefaultEndpoints();
 
 app.Run();
-
-// Polly Retry Policy
-static IAsyncPolicy<HttpResponseMessage> GetRetryPolicy()
-{
-    return HttpPolicyExtensions
-        .HandleTransientHttpError() // Handles 5xx, 408 (Request Timeout)
-        .OrResult(msg => msg.StatusCode == System.Net.HttpStatusCode.NotFound) // Example: also retry on 404
-        .WaitAndRetryAsync(3, retryAttempt => 
-            TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)) + 
-            TimeSpan.FromMilliseconds(new Random().Next(0, 100))
-        );
-}
 
 namespace TicTacToe.GameSession
 {

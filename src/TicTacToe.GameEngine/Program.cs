@@ -3,6 +3,7 @@ using FastEndpoints.Swagger;
 using TicTacToe.GameEngine.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.AddServiceDefaults();
 
 // Load engine-specific configuration files
 builder.Configuration
@@ -48,8 +49,7 @@ app.UseSwaggerGen();
 
 app.UseHttpsRedirection();
 
-// Health check endpoint
-app.MapHealthChecks("/health");
+app.MapDefaultEndpoints();
 
 app.Run();
 

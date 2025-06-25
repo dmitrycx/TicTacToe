@@ -10,7 +10,6 @@ global using TicTacToe.GameSession.Domain.Services;
 #endregion
 
 #region Infrastructure
-global using TicTacToe.GameSession.Infrastructure.Configuration;
 global using TicTacToe.GameSession.Infrastructure.External;
 global using TicTacToe.GameSession.Persistence;
 #endregion

@@ -5,10 +5,5 @@
       "Microsoft.AspNetCore": "Warning"
     }
   },
-  "AllowedHosts": "*",
-  "GameEngine": {
-    "BaseUrl": "http://localhost:5000",
-    "TimeoutSeconds": 30,
-    "MaxRetries": 3
-  }
+  "AllowedHosts": "*"
 }
