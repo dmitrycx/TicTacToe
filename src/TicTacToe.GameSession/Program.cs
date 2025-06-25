@@ -7,6 +7,13 @@ using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Load session-specific configuration files
+builder.Configuration
+    .SetBasePath(builder.Environment.ContentRootPath)
+    .AddJsonFile("session.appsettings.json", optional: false, reloadOnChange: true)
+    .AddJsonFile($"session.appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
+    .AddEnvironmentVariables();
+
 // FastEndpoints registration
 builder.Services.AddFastEndpoints();
 builder.Services.SwaggerDocument();
@@ -40,6 +47,9 @@ builder.Services.AddHttpClient<IGameEngineApiClient, GameEngineHttpClient>((serv
 })
 .AddPolicyHandler(GetRetryPolicy());
 
+// Add health checks
+builder.Services.AddHealthChecks();
+
 var app = builder.Build();
 
 // FastEndpoints
@@ -47,6 +57,9 @@ app.UseFastEndpoints();
 app.UseSwaggerGen();
 
 app.UseHttpsRedirection();
+
+// Health check endpoint
+app.MapHealthChecks("/health");
 
 app.Run();
 
