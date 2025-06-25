@@ -29,9 +29,9 @@ public static class GameTestHelpers
         var game = Game.Create();
         
         // Parse the board state string (3x3 grid)
-        for (int row = 0; row < 3; row++)
+        for (var row = 0; row < 3; row++)
         {
-            for (int col = 0; col < 3; col++)
+            for (var col = 0; col < 3; col++)
             {
                 var index = row * 3 + col;
                 if (index < boardState.Length)

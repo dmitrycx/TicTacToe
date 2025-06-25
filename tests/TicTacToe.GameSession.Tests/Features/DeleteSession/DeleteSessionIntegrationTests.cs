@@ -104,7 +104,7 @@ public class DeleteSessionIntegrationTests(TestFixture fixture) : IClassFixture<
         // Arrange - Create multiple sessions
         var sessionIds = new List<Guid>();
         
-        for (int i = 0; i < 3; i++)
+        for (var i = 0; i < 3; i++)
         {
             var createResponse = await _client.PostAsync("/sessions", null);
             createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
