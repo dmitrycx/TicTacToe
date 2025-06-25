@@ -187,23 +187,16 @@ jobs:
           output: 'trivy-game-session-results.sarif'
           severity: 'CRITICAL,HIGH'
 
-      # STEP 9: Merge SARIF files into a single file
-      - name: Merge SARIF files
-        uses: microsoft/sarif-actions/merge@v2
-        with:
-          input-directory: '.'
-          output-file: 'trivy-merged.sarif'
-          pattern: 'trivy-*-results.sarif'
-
-      # STEP 10: Upload merged Trivy scan results to GitHub Security tab
+      # STEP 9: Upload Trivy scan results to GitHub Security tab
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
-          sarif_file: 'trivy-merged.sarif'
+          # The action will find and upload all .sarif files in the root directory
+          sarif_file: .
 
       # --- Integration Test Stage (against live containers) ---
-      # STEP 11: Run integration tests against live containers
+      # STEP 10: Run integration tests against live containers
       - name: Run integration tests against containers
         run: |
           # 1. Create a docker-compose file to orchestrate our services for the test run.
@@ -256,14 +249,14 @@ jobs:
           # to http://localhost:8080 and http://localhost:8081, which are mapped to our containers.
           dotnet test ./tests/TicTacToe.GameSession.Tests/TicTacToe.GameSession.Tests.csproj --no-build --filter "Category=Integration" --logger "trx;LogFileName=integration-test-results.trx" --results-directory ./test-results/
 
-      # STEP 12: Stop containers (cleanup)
+      # STEP 11: Stop containers (cleanup)
       - name: Stop containers
         if: always() # This step runs even if the tests fail
         run: |
           docker-compose -f docker-compose.ci.yml down
 
       # --- Reporting Stage ---
-      # STEP 13: Publish test results to pull request interface
+      # STEP 12: Publish test results to pull request interface
       - name: Publish Test Results
         if: always()
         uses: dorny/test-reporter@v1
@@ -272,7 +265,7 @@ jobs:
           path: ./test-results/integration-test-results.trx
           reporter: dotnet-trx
 
-      # STEP 14: Upload detailed reports and coverage data for analysis
+      # STEP 13: Upload detailed reports and coverage data for analysis
       - name: Upload test & coverage artifacts
         uses: actions/upload-artifact@v4
         if: always()
@@ -280,6 +273,6 @@ jobs:
           name: integration-test-and-coverage-results
           path: |
             ./test-results/
-            trivy-merged.sarif
+            trivy-*-results.sarif
             docker-compose.ci.yml
           retention-days: 7 
