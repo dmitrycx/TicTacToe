@@ -155,7 +155,18 @@ jobs:
 
       # STEP 6: Restore ALL dependencies
       - name: Restore ALL dependencies
-        run: dotnet restore ./TicTacToe.sln
+        run: |
+          echo "Listing all projects in solution:"
+          dotnet sln ./TicTacToe.sln list
+          echo "Restoring solution:"
+          dotnet restore ./TicTacToe.sln --verbosity normal
+          echo "Verifying restore completed for all projects:"
+          find . -name "project.assets.json" -type f
+          echo "If any projects are missing, restoring individually:"
+          dotnet restore ./src/TicTacToe.GameEngine/TicTacToe.GameEngine.csproj
+          dotnet restore ./src/TicTacToe.GameSession/TicTacToe.GameSession.csproj
+          dotnet restore ./tests/TicTacToe.GameEngine.Tests/TicTacToe.GameEngine.Tests.csproj
+          dotnet restore ./tests/TicTacToe.GameSession.Tests/TicTacToe.GameSession.Tests.csproj
 
       # STEP 7: Build ALL projects
       - name: Build ALL projects
