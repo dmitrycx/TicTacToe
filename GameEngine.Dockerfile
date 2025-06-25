@@ -4,12 +4,14 @@ WORKDIR /src
 
 # Copy project files first for better layer caching
 COPY ["src/TicTacToe.GameEngine/TicTacToe.GameEngine.csproj", "src/TicTacToe.GameEngine/"]
+COPY ["aspire/TicTacToe.ServiceDefaults/TicTacToe.ServiceDefaults.csproj", "aspire/TicTacToe.ServiceDefaults/"]
 
 # Restore dependencies
 RUN dotnet restore "src/TicTacToe.GameEngine/TicTacToe.GameEngine.csproj"
 
 # Copy source code
 COPY ["src/TicTacToe.GameEngine/", "src/TicTacToe.GameEngine/"]
+COPY ["aspire/TicTacToe.ServiceDefaults/", "aspire/TicTacToe.ServiceDefaults/"]
 
 # Build and publish
 WORKDIR "/src/src/TicTacToe.GameEngine"

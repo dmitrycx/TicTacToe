@@ -19,7 +19,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\TicTacToe.GameEngine\TicTacToe.GameEngine.csproj" />
-    <ProjectReference Include="..\..\TicTacToe.ServiceDefaults\TicTacToe.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\..\aspire\TicTacToe.ServiceDefaults\TicTacToe.ServiceDefaults.csproj" />
   </ItemGroup>
 
   <ItemGroup>

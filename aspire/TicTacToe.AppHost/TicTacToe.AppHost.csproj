@@ -15,8 +15,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\src\TicTacToe.GameEngine\TicTacToe.GameEngine.csproj" />
-    <ProjectReference Include="..\src\TicTacToe.GameSession\TicTacToe.GameSession.csproj" />
+    <ProjectReference Include="..\..\src\TicTacToe.GameEngine\TicTacToe.GameEngine.csproj" />
+    <ProjectReference Include="..\..\src\TicTacToe.GameSession\TicTacToe.GameSession.csproj" />
   </ItemGroup>
 
 </Project>

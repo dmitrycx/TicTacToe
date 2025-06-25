@@ -7,6 +7,7 @@ WORKDIR /src
 # Copy project files first for better layer caching
 COPY ["src/TicTacToe.GameEngine/TicTacToe.GameEngine.csproj", "src/TicTacToe.GameEngine/"]
 COPY ["src/TicTacToe.GameSession/TicTacToe.GameSession.csproj", "src/TicTacToe.GameSession/"]
+COPY ["aspire/TicTacToe.ServiceDefaults/TicTacToe.ServiceDefaults.csproj", "aspire/TicTacToe.ServiceDefaults/"]
 
 # Restore dependencies for both projects
 RUN dotnet restore "src/TicTacToe.GameEngine/TicTacToe.GameEngine.csproj"
@@ -15,6 +16,7 @@ RUN dotnet restore "src/TicTacToe.GameSession/TicTacToe.GameSession.csproj"
 # Copy source code for both projects
 COPY ["src/TicTacToe.GameEngine/", "src/TicTacToe.GameEngine/"]
 COPY ["src/TicTacToe.GameSession/", "src/TicTacToe.GameSession/"]
+COPY ["aspire/TicTacToe.ServiceDefaults/", "aspire/TicTacToe.ServiceDefaults/"]
 
 # Build and publish the main project (GameSession)
 WORKDIR "/src/src/TicTacToe.GameSession"
