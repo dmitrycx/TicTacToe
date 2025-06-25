@@ -35,21 +35,21 @@ on:
   pull_request:
     branches: [ "main", "master" ]
     paths:
-      - 'src/**'
-      - 'tests/**'
-      - 'aspire/**'
-      - '**.sln'
-      - '**.csproj'
+      - 'src/'
+      - 'tests/'
+      - 'aspire/'
+      - '.sln'
+      - '.csproj'
       - '.github/workflows/ci.yml'
       - 'Dockerfile*'
   push:
     branches: [ "main", "master" ]
     paths:
-      - 'src/**'
-      - 'tests/**'
-      - 'aspire/**'
-      - '**.sln'
-      - '**.csproj'
+      - 'src/'
+      - 'tests/'
+      - 'aspire/'
+      - '.sln'
+      - '.csproj'
       - '.github/workflows/ci.yml'
       - 'Dockerfile*'
 
@@ -187,12 +187,18 @@ jobs:
           output: 'trivy-game-session-results.sarif'
           severity: 'CRITICAL,HIGH'
 
-      # STEP 9: Upload all Trivy scan results to GitHub Security tab
-      - name: Upload all Trivy scan results to GitHub Security tab
+      # STEP 9: Upload Trivy scan results to GitHub Security tab
+      - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
-          sarif_file: .
+          sarif_file: 'trivy-game-engine-results.sarif'
+
+      - name: Upload Trivy scan results to GitHub Security tab (GameSession)
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-game-session-results.sarif'
 
       # --- Integration Test Stage (against live containers) ---
       # STEP 10: Run integration tests against live containers
