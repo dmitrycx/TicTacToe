@@ -24,6 +24,15 @@ RUN dotnet publish "TicTacToe.GameSession.csproj" -c Release -o /app/publish /p:
 
 # Stage 2: Runtime
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
+
+# --- BEST PRACTICE ---
+# Add common, lightweight diagnostic tools needed for a container environment.
+# 'curl' is for health checks. 'procps' can be useful for debugging running processes.
+# Use --no-install-recommends to keep the image small.
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends curl procps && \
+    rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 # Create non-root user for security
@@ -44,8 +53,8 @@ ENV ASPNETCORE_ENVIRONMENT=Production
 ENV DOTNET_RUNNING_IN_CONTAINER=true
 ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8081/health || exit 1
+# Health check - use /alive for liveness checks
+HEALTHCHECK --interval=10s --timeout=3s --retries=5 --start-period=30s \
+    CMD curl -f http://localhost:8081/alive || exit 1
 
 ENTRYPOINT ["dotnet", "TicTacToe.GameSession.dll"] 
