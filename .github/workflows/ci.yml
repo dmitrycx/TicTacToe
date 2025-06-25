@@ -17,7 +17,6 @@
 #   - Intelligent NuGet package caching for faster builds
 #   - Separated test execution (unit vs integration) for efficiency
 #   - Incremental builds with --no-restore optimization
-#   - Artifact sharing between jobs to eliminate redundant builds
 #
 # Quality Features:
 #   - Code coverage collection with XPlat Code Coverage
@@ -85,16 +84,16 @@ jobs:
 
       # STEP 4: Download project dependencies from NuGet
       - name: Restore dependencies
-        run: dotnet restore
+        run: dotnet restore ./TicTacToe.sln
 
       # STEP 5: Compile the solution in Release configuration
       - name: Build solution
-        run: dotnet build --no-restore --configuration Release
+        run: dotnet build ./TicTacToe.sln --no-restore --configuration Release
       
       # STEP 6: Run ONLY the unit tests (Domain + Configuration) for fast feedback
       - name: Run unit tests
         run: >
-          dotnet test --no-build --configuration Release
+          dotnet test ./TicTacToe.sln --no-build --no-restore --configuration Release
           --filter "Category=Unit" 
           --results-directory ./test-results/
           --logger "trx;LogFileName=unit-test-results.trx"
@@ -107,14 +106,6 @@ jobs:
           name: unit-test-results
           path: ./test-results/unit-test-results.trx
           retention-days: 7
-
-      # STEP 8: Upload built solution for reuse in integration job
-      - name: Upload built solution artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: built-solution
-          path: . # Upload the whole directory with built binaries
-          retention-days: 1 # Short retention since it's only needed for the next job
 
   # JOB 2: Security scanning and slower integration tests
   integration-and-security-tests:
@@ -131,7 +122,7 @@ jobs:
       security-events: write # Allow security scanning results
 
     steps:
-      # STEP 1: Retrieve source code from the repository (needed for security scans)
+      # STEP 1: Retrieve source code from the repository
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -147,7 +138,34 @@ jobs:
           base: ${{ github.event.pull_request.base.sha || github.sha }}
           head: ${{ github.sha }}
 
-      # STEP 4: Container vulnerability scanning (if Dockerfiles are present)
+      # STEP 4: Configure .NET 9.0.x development environment
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.200'
+
+      # STEP 5: Performance optimization - restore NuGet packages from cache
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json', '**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      # STEP 6: Restore ALL dependencies
+      - name: Restore ALL dependencies
+        run: dotnet restore ./TicTacToe.sln
+
+      # STEP 7: Build ALL projects
+      - name: Build ALL projects
+        run: dotnet build ./TicTacToe.sln --no-restore --configuration Release
+
+      # STEP 8: Run Vulnerability Scan AFTER build
+      - name: Run Security Analysis for Vulnerable Packages
+        run: dotnet list ./TicTacToe.sln package --vulnerable --include-transitive
+
+      # STEP 9: Container vulnerability scanning (if Dockerfiles are present)
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
@@ -157,50 +175,16 @@ jobs:
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH'
 
-      # STEP 5: Configure .NET 9.0.x development environment (needed for test execution)
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '9.0.200'
-
-      # STEP 6: Performance optimization - restore NuGet packages from cache
-      - name: Cache NuGet packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.nuget/packages
-          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json', '**/*.csproj') }}
-          restore-keys: |
-            ${{ runner.os }}-nuget-
-
-      # STEP 7: Download and extract the built solution from the first job
-      - name: Download built solution artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: built-solution
-          path: . # Extract to current directory, replacing source with built version
-
-      # STEP 8: Restore dependencies (to sync build state after artifact download)
-      - name: Restore dependencies
-        run: dotnet restore
-
-      # STEP 9: Synchronize MSBuild state with a no-op build
-      - name: Build solution (to sync state)
-        run: dotnet build --no-restore --configuration Release
-
-      # STEP 10: Code quality and security analysis
-      - name: Run Security Analysis
-        run: dotnet list package --vulnerable
-
-      # STEP 11: Run ONLY the integration tests with coverage collection
+      # STEP 10: Run ONLY the integration tests with coverage collection
       - name: Run integration tests with coverage
         run: >
-          dotnet test --no-build --no-restore --configuration Release
+          dotnet test ./TicTacToe.sln --no-build --no-restore --configuration Release
           --filter "Category=Integration"
           --collect:"XPlat Code Coverage"
           --results-directory ./test-results/
           --logger "trx;LogFileName=integration-test-results.trx"
 
-      # STEP 12: Publish test results to pull request interface
+      # STEP 11: Publish test results to pull request interface
       - name: Publish Test Results
         uses: dorny/test-reporter@v1
         if: always()
@@ -209,7 +193,7 @@ jobs:
           path: ./test-results/integration-test-results.trx
           reporter: dotnet-trx
 
-      # STEP 13: Upload detailed reports and coverage data for analysis
+      # STEP 12: Upload detailed reports and coverage data for analysis
       - name: Upload test & coverage artifacts
         uses: actions/upload-artifact@v4
         if: always()
@@ -220,7 +204,7 @@ jobs:
             trivy-results.sarif
           retention-days: 7
 
-      # STEP 14: Upload Trivy scan results to GitHub Security tab
+      # STEP 13: Upload Trivy scan results to GitHub Security tab
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
         if: always()
