@@ -143,12 +143,18 @@ jobs:
           base: ${{ github.event.pull_request.base.sha || github.sha }}
           head: ${{ github.sha }}
 
+      # STEP 4: Setup .NET environment for integration tests
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.200'
+
       # --- Docker Image Build Stage ---
-      # STEP 4: Setup Docker Buildx
+      # STEP 5: Setup Docker Buildx
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # STEP 5: Build GameEngine Docker image
+      # STEP 6: Build GameEngine Docker image
       - name: Build GameEngine Docker image
         uses: docker/build-push-action@v5
         with:
@@ -158,7 +164,7 @@ jobs:
           load: true # Make the image available to the Docker engine on the runner
           push: false # Do not push to a registry
 
-      # STEP 6: Build GameSession Docker image
+      # STEP 7: Build GameSession Docker image
       - name: Build GameSession Docker image
         uses: docker/build-push-action@v5
         with:
@@ -169,7 +175,7 @@ jobs:
           push: false
 
       # --- Security Scan Stage (on the built images) ---
-      # STEP 7: Run Trivy to scan GameEngine image
+      # STEP 8: Run Trivy to scan GameEngine image
       - name: Run Trivy to scan GameEngine image
         uses: aquasecurity/trivy-action@master
         with:
@@ -178,7 +184,7 @@ jobs:
           output: 'trivy-game-engine-results.sarif'
           severity: 'CRITICAL,HIGH'
 
-      # STEP 8: Run Trivy to scan GameSession image
+      # STEP 9: Run Trivy to scan GameSession image
       - name: Run Trivy to scan GameSession image
         uses: aquasecurity/trivy-action@master
         with:
@@ -187,7 +193,7 @@ jobs:
           output: 'trivy-game-session-results.sarif'
           severity: 'CRITICAL,HIGH'
 
-      # STEP 9: Upload Trivy scan results to GitHub Security tab
+      # STEP 10: Upload Trivy scan results to GitHub Security tab
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
         if: always()
@@ -196,7 +202,7 @@ jobs:
           sarif_file: .
 
       # --- Integration Test Stage (against live containers) ---
-      # STEP 10: Run integration tests against live containers
+      # STEP 11: Run integration tests against live containers
       - name: Run integration tests against containers
         run: |
           # 1. Create a docker-compose file to orchestrate our services for the test run.
@@ -249,14 +255,14 @@ jobs:
           # to http://localhost:8080 and http://localhost:8081, which are mapped to our containers.
           dotnet test ./tests/TicTacToe.GameSession.Tests/TicTacToe.GameSession.Tests.csproj --no-build --filter "Category=Integration" --logger "trx;LogFileName=integration-test-results.trx" --results-directory ./test-results/
 
-      # STEP 11: Stop containers (cleanup)
+      # STEP 12: Stop containers (cleanup)
       - name: Stop containers
         if: always() # This step runs even if the tests fail
         run: |
           docker compose -f docker-compose.ci.yml down
 
       # --- Reporting Stage ---
-      # STEP 12: Publish test results to pull request interface
+      # STEP 13: Publish test results to pull request interface
       - name: Publish Test Results
         if: always()
         uses: dorny/test-reporter@v1
@@ -265,7 +271,7 @@ jobs:
           path: ./test-results/integration-test-results.trx
           reporter: dotnet-trx
 
-      # STEP 13: Upload detailed reports and coverage data for analysis
+      # STEP 14: Upload detailed reports and coverage data for analysis
       - name: Upload test & coverage artifacts
         uses: actions/upload-artifact@v4
         if: always()
