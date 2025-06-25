@@ -33,7 +33,7 @@ public class TestFixture : WebApplicationFactory<Program>
         builder.ConfigureAppConfiguration((context, config) =>
         {
             // Add test configuration
-            config.AddInMemoryCollection(new Dictionary<string, string>
+            config.AddInMemoryCollection(new Dictionary<string, string?>
             {
                 {"GameEngine:BaseUrl", "http://localhost:5000"},
                 {"GameEngine:TimeoutSeconds", "30"}
