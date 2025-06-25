@@ -210,7 +210,7 @@ jobs:
               ports:
                 - "8080:8080"
               healthcheck:
-                test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+                test: ["CMD", "curl", "-f", "http://localhost:8080/alive"]
                 interval: 10s
                 timeout: 5s
                 retries: 5
@@ -223,7 +223,7 @@ jobs:
                 # This is how GameSession finds GameEngine inside the Docker network
                 - GameEngine__BaseUrl=http://game-engine:8080
               healthcheck:
-                test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
+                test: ["CMD", "curl", "-f", "http://localhost:8081/alive"]
                 interval: 10s
                 timeout: 5s
                 retries: 5
