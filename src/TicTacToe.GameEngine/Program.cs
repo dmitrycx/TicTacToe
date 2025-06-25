@@ -3,6 +3,18 @@ using FastEndpoints.Swagger;
 using TicTacToe.GameEngine.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.AddServiceDefaults();
+
+// Load engine-specific configuration files
+builder.Configuration
+    .SetBasePath(builder.Environment.ContentRootPath)
+    .AddJsonFile("engine.appsettings.json", optional: false, reloadOnChange: true)
+    .AddJsonFile($"engine.appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
+    .AddEnvironmentVariables();
+
+// FastEndpoints registration
+builder.Services.AddFastEndpoints();
+builder.Services.SwaggerDocument();
 
 // FastEndpoints registration
 builder.Services.AddFastEndpoints();
@@ -22,6 +34,9 @@ builder.Services.AddCors(options =>
     });
 });
 
+// Add health checks
+builder.Services.AddHealthChecks();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline
@@ -37,6 +52,8 @@ app.UseFastEndpoints();
 app.UseSwaggerGen();
 
 app.UseHttpsRedirection();
+app.MapDefaultEndpoints();
+
 
 app.Run();
 
