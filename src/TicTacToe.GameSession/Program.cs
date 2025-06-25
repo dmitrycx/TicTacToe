@@ -39,6 +39,9 @@ builder.Services.AddHttpClient<IGameEngineApiClient, GameEngineHttpClient>(clien
     client.BaseAddress = new Uri("http://gameengine");
 });
 
+// Add health checks
+builder.Services.AddHealthChecks();
+
 var app = builder.Build();
 
 // FastEndpoints

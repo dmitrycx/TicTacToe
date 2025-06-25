@@ -3,13 +3,13 @@
 #
 # Purpose:
 #   A secure, optimized CI pipeline for the .NET Tic Tac Toe microservices project.
-#   Automatically validates every pull request and push to main/master branches
-#   through comprehensive security scanning, building, testing, and reporting.
+#   Follows "build once, test the artifact" principle by building Docker images
+#   and testing the actual containers that will be deployed.
 #
 # Security Features:
 #   - Dependency vulnerability scanning using GitHub's dependency-review-action
 #   - Secrets detection and prevention using TruffleHog
-#   - Container vulnerability scanning (if containers are present)
+#   - Container vulnerability scanning using Trivy on built images
 #   - Principle of Least Privilege token permissions
 #   - Early security validation before build process
 #
@@ -27,7 +27,7 @@
 #
 # Workflow Jobs:
 #   Job 1 (unit-tests): Fast feedback with unit tests only
-#   Job 2 (integration-and-security-tests): Security scanning + integration tests
+#   Job 2 (build-and-integration-test): Build Docker images, scan them, and test live containers
 # ------------------------------------------------------------------------------
 name: .NET CI
 
@@ -35,19 +35,23 @@ on:
   pull_request:
     branches: [ "main", "master" ]
     paths:
-      - 'src/**'
-      - 'tests/**'
-      - '**.sln'
-      - '**.csproj'
+      - 'src/'
+      - 'tests/'
+      - 'aspire/'
+      - '.sln'
+      - '.csproj'
       - '.github/workflows/ci.yml'
+      - 'Dockerfile*'
   push:
     branches: [ "main", "master" ]
     paths:
-      - 'src/**'
-      - 'tests/**'
-      - '**.sln'
-      - '**.csproj'
+      - 'src/'
+      - 'tests/'
+      - 'aspire/'
+      - '.sln'
+      - '.csproj'
       - '.github/workflows/ci.yml'
+      - 'Dockerfile*'
 
 jobs:
   # JOB 1: Fast feedback with unit tests only
@@ -107,28 +111,29 @@ jobs:
           path: ./test-results/unit-test-results.trx
           retention-days: 7
 
-  # JOB 2: Security scanning and slower integration tests
-  integration-and-security-tests:
-    name: Integration & Security Tests
+  # JOB 2: Build Docker images, scan them, and run integration tests against the live containers
+  build-and-integration-test:
+    name: Docker Build, Scan & Integration Test
     runs-on: ubuntu-latest
-    needs: unit-tests # CRITICAL: This job only runs if unit-tests job succeeds
+    needs: unit-tests # CRITICAL: Only runs if unit tests pass
 
-    # SECURITY BEST PRACTICE: Restrict permissions for the GITHUB_TOKEN.
     permissions:
-      contents: read      # Allow checkout
-      pull-requests: read # Allow PR-based actions (like dependency-review)
-      checks: write       # Allow test-reporter to publish a check
-      actions: read       # Allow discovering actions
-      security-events: write # Allow security scanning results
+      contents: read
+      pull-requests: read
+      checks: write
+      actions: read
+      security-events: write
 
     steps:
       # STEP 1: Retrieve source code from the repository
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # --- Early Security Scans (on source code) ---
       # STEP 2: Security validation - scan for vulnerable dependencies
       - name: Dependency Review
         uses: actions/dependency-review-action@v4
+        if: github.event_name == 'pull_request' # Only run on PRs
 
       # STEP 3: Secrets detection - scan for hardcoded secrets and credentials
       - name: Run TruffleHog
@@ -138,75 +143,142 @@ jobs:
           base: ${{ github.event.pull_request.base.sha || github.sha }}
           head: ${{ github.sha }}
 
-      # STEP 4: Configure .NET 9.0.x development environment
+      # STEP 4: Setup .NET environment for integration tests
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '9.0.200'
 
-      # STEP 5: Performance optimization - restore NuGet packages from cache
-      - name: Cache NuGet packages
-        uses: actions/cache@v4
+      # --- Docker Image Build Stage ---
+      # STEP 5: Setup Docker Buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # STEP 6: Build GameEngine Docker image
+      - name: Build GameEngine Docker image
+        uses: docker/build-push-action@v5
         with:
-          path: ~/.nuget/packages
-          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json', '**/*.csproj') }}
-          restore-keys: |
-            ${{ runner.os }}-nuget-
+          context: .
+          file: ./GameEngine.Dockerfile
+          tags: tictactoe-gameengine:ci # Tag for use in this workflow
+          load: true # Make the image available to the Docker engine on the runner
+          push: false # Do not push to a registry
 
-      # STEP 6: Restore ALL dependencies
-      - name: Restore ALL dependencies
-        run: dotnet restore ./TicTacToe.sln
+      # STEP 7: Build GameSession Docker image
+      - name: Build GameSession Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./GameSession.Dockerfile
+          tags: tictactoe-gamesession:ci
+          load: true
+          push: false
 
-      # STEP 7: Build ALL projects
-      - name: Build ALL projects
-        run: dotnet build ./TicTacToe.sln --no-restore --configuration Release
-
-      # STEP 8: Run Vulnerability Scan AFTER build
-      - name: Run Security Analysis for Vulnerable Packages
-        run: dotnet list ./TicTacToe.sln package --vulnerable --include-transitive
-
-      # STEP 9: Container vulnerability scanning (if Dockerfiles are present)
-      - name: Run Trivy vulnerability scanner
+      # --- Security Scan Stage (on the built images) ---
+      # STEP 8: Run Trivy to scan GameEngine image
+      - name: Run Trivy to scan GameEngine image
         uses: aquasecurity/trivy-action@master
         with:
-          scan-type: 'fs'
-          scan-ref: '.'
+          image-ref: 'tictactoe-gameengine:ci' # Scan the image artifact
           format: 'sarif'
-          output: 'trivy-results.sarif'
+          output: 'trivy-game-engine-results.sarif'
           severity: 'CRITICAL,HIGH'
 
-      # STEP 10: Run ONLY the integration tests with coverage collection
-      - name: Run integration tests with coverage
-        run: >
-          dotnet test ./TicTacToe.sln --no-build --no-restore --configuration Release
-          --filter "Category=Integration"
-          --collect:"XPlat Code Coverage"
-          --results-directory ./test-results/
-          --logger "trx;LogFileName=integration-test-results.trx"
-
-      # STEP 11: Publish test results to pull request interface
-      - name: Publish Test Results
-        uses: dorny/test-reporter@v1
-        if: always()
+      # STEP 9: Run Trivy to scan GameSession image
+      - name: Run Trivy to scan GameSession image
+        uses: aquasecurity/trivy-action@master
         with:
-          name: Test Results
-          path: ./test-results/integration-test-results.trx
-          reporter: dotnet-trx
+          image-ref: 'tictactoe-gamesession:ci' # Scan the image artifact
+          format: 'sarif'
+          output: 'trivy-game-session-results.sarif'
+          severity: 'CRITICAL,HIGH'
 
-      # STEP 12: Upload detailed reports and coverage data for analysis
-      - name: Upload test & coverage artifacts
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: test-and-coverage-results
-          path: |
-            ./test-results/
-            trivy-results.sarif
-          retention-days: 7
-
-      # STEP 13: Upload Trivy scan results to GitHub Security tab
+      # STEP 10: Upload Trivy scan results to GitHub Security tab
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
-          sarif_file: 'trivy-results.sarif' 
+          # The action will find and upload all .sarif files in the root directory
+          sarif_file: .
+
+      # --- Integration Test Stage (against live containers) ---
+      # STEP 11: Run integration tests against live containers
+      - name: Run integration tests against containers
+        run: |
+          # 1. Create a docker-compose file to orchestrate our services for the test run.
+          # This is the CI equivalent of what your Aspire AppHost does for local dev.
+          cat <<EOF > docker-compose.ci.yml
+          version: '3.8'
+          services:
+            game-engine:
+              image: tictactoe-gameengine:ci
+              hostname: game-engine
+              ports:
+                - "8080:8080"
+              healthcheck:
+                test: ["CMD", "curl", "-f", "http://localhost:8080/alive"]
+                interval: 10s
+                timeout: 5s
+                retries: 5
+                start_period: 30s
+            game-session:
+              image: tictactoe-gamesession:ci
+              ports:
+                - "8081:8081"
+              environment:
+                # This is how GameSession finds GameEngine inside the Docker network
+                - GameEngine__BaseUrl=http://game-engine:8080
+              healthcheck:
+                test: ["CMD", "curl", "-f", "http://localhost:8081/alive"]
+                interval: 10s
+                timeout: 5s
+                retries: 5
+                start_period: 30s
+              depends_on:
+                game-engine:
+                  condition: service_healthy
+          EOF
+
+          # 2. Start the services in the background
+          docker compose -f docker-compose.ci.yml up -d
+
+          # 3. Wait for services to be healthy before running tests
+          echo "Waiting for services to become healthy..."
+          timeout 60 bash -c 'until docker compose -f docker-compose.ci.yml ps | grep -q "healthy"; do sleep 5; done' || echo "Services may not be fully healthy, proceeding with tests"
+
+          # 4. Set up .NET environment to run the test project
+          # Note: We are NOT building the main apps, just the test project
+          dotnet restore ./tests/TicTacToe.GameSession.Tests/TicTacToe.GameSession.Tests.csproj
+          dotnet build ./tests/TicTacToe.GameSession.Tests/TicTacToe.GameSession.Tests.csproj --no-restore
+
+          # 5. Run the integration tests. The test code will now make HTTP calls
+          # to http://localhost:8080 and http://localhost:8081, which are mapped to our containers.
+          dotnet test ./tests/TicTacToe.GameSession.Tests/TicTacToe.GameSession.Tests.csproj --no-build --filter "Category=Integration" --logger "trx;LogFileName=integration-test-results.trx" --results-directory ./test-results/
+
+      # STEP 12: Stop containers (cleanup)
+      - name: Stop containers
+        if: always() # This step runs even if the tests fail
+        run: |
+          docker compose -f docker-compose.ci.yml down
+
+      # --- Reporting Stage ---
+      # STEP 13: Publish test results to pull request interface
+      - name: Publish Test Results
+        if: always()
+        uses: dorny/test-reporter@v1
+        with:
+          name: Integration Test Results
+          path: ./test-results/integration-test-results.trx
+          reporter: dotnet-trx
+
+      # STEP 14: Upload detailed reports and coverage data for analysis
+      - name: Upload test & coverage artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-test-and-coverage-results
+          path: |
+            ./test-results/
+            trivy-*-results.sarif
+            docker-compose.ci.yml
+          retention-days: 7 

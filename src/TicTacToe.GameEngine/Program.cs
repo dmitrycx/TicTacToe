@@ -54,7 +54,6 @@ app.UseSwaggerGen();
 app.UseHttpsRedirection();
 app.MapDefaultEndpoints();
 
-
 app.Run();
 
 // Make Program accessible for testing
