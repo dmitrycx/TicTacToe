@@ -4,6 +4,7 @@ using FastEndpoints.Swagger;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.ServiceDiscovery;
 
+
 var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
 

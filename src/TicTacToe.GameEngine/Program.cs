@@ -16,6 +16,10 @@ builder.Configuration
 builder.Services.AddFastEndpoints();
 builder.Services.SwaggerDocument();
 
+// FastEndpoints registration
+builder.Services.AddFastEndpoints();
+builder.Services.SwaggerDocument();
+
 // Add services to the container
 builder.Services.AddSingleton<IGameRepository, InMemoryGameRepository>();
 
@@ -48,8 +52,8 @@ app.UseFastEndpoints();
 app.UseSwaggerGen();
 
 app.UseHttpsRedirection();
-
 app.MapDefaultEndpoints();
+
 
 app.Run();
 
