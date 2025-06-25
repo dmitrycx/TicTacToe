@@ -183,11 +183,15 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore
 
-      # STEP 9: Code quality and security analysis
+      # STEP 9: Synchronize MSBuild state with a no-op build
+      - name: Build solution (to sync state)
+        run: dotnet build --no-restore --configuration Release
+
+      # STEP 10: Code quality and security analysis
       - name: Run Security Analysis
         run: dotnet list package --vulnerable
 
-      # STEP 10: Run ONLY the integration tests with coverage collection
+      # STEP 11: Run ONLY the integration tests with coverage collection
       - name: Run integration tests with coverage
         run: >
           dotnet test --no-build --no-restore --configuration Release
@@ -196,7 +200,7 @@ jobs:
           --results-directory ./test-results/
           --logger "trx;LogFileName=integration-test-results.trx"
 
-      # STEP 11: Publish test results to pull request interface
+      # STEP 12: Publish test results to pull request interface
       - name: Publish Test Results
         uses: dorny/test-reporter@v1
         if: always()
@@ -205,7 +209,7 @@ jobs:
           path: ./test-results/integration-test-results.trx
           reporter: dotnet-trx
 
-      # STEP 12: Upload detailed reports and coverage data for analysis
+      # STEP 13: Upload detailed reports and coverage data for analysis
       - name: Upload test & coverage artifacts
         uses: actions/upload-artifact@v4
         if: always()
@@ -216,7 +220,7 @@ jobs:
             trivy-results.sarif
           retention-days: 7
 
-      # STEP 13: Upload Trivy scan results to GitHub Security tab
+      # STEP 14: Upload Trivy scan results to GitHub Security tab
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
         if: always()
