@@ -1,0 +1,480 @@
+"use client"
+
+import React, { useState, useEffect } from 'react'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { 
+  Play, 
+  Square, 
+  X, 
+  Circle, 
+  AlertCircle, 
+  Loader2, 
+  Zap, 
+  Brain, 
+  Shuffle, 
+  Target, 
+  Cpu 
+} from 'lucide-react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Label } from '@/components/ui/label'
+import { GameState, GameStrategy, Move, GameSession } from '@/types/game'
+import { ApiService } from '@/services/api'
+import { SignalRService } from '@/services/signalr'
+
+const GAME_STRATEGIES: {
+  value: GameStrategy
+  label: string
+  description: string
+  icon: React.ReactNode
+  color: string
+}[] = [
+  {
+    value: "Random",
+    label: "Random",
+    description: "Makes random valid moves",
+    icon: <Shuffle className="w-4 h-4" />,
+    color: "text-slate-600",
+  },
+  {
+    value: "RuleBased",
+    label: "Rule-Based",
+    description: "Uses predefined rules and heuristics",
+    icon: <Target className="w-4 h-4" />,
+    color: "text-blue-600",
+  },
+  {
+    value: "AI",
+    label: "AI",
+    description: "Uses artificial intelligence algorithms",
+    icon: <Brain className="w-4 h-4" />,
+    color: "text-purple-600",
+  },
+  {
+    value: "MinMax",
+    label: "MinMax",
+    description: "Uses minimax algorithm for optimal play",
+    icon: <Zap className="w-4 h-4" />,
+    color: "text-emerald-600",
+  },
+  {
+    value: "AlphaBeta",
+    label: "Alpha-Beta",
+    description: "Enhanced minimax with alpha-beta pruning",
+    icon: <Cpu className="w-4 h-4" />,
+    color: "text-red-600",
+  },
+]
+
+export default function TicTacToeGame() {
+  const [gameState, setGameState] = useState<GameState>({
+    board: Array(9).fill(null),
+    status: "waiting",
+  })
+  const [session, setSession] = useState<GameSession | null>(null)
+  const [signalRService, setSignalRService] = useState<SignalRService | null>(null)
+  const [isConnected, setIsConnected] = useState(false)
+  const [isSimulating, setIsSimulating] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [moveHistory, setMoveHistory] = useState<Move[]>([])
+  const [selectedStrategy, setSelectedStrategy] = useState<GameStrategy>("Random")
+  const [winningSquares, setWinningSquares] = useState<number[]>([])
+
+  // Initialize SignalR connection
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const service = new SignalRService()
+      setSignalRService(service)
+    }
+  }, [])
+
+  // Start SignalR connection
+  useEffect(() => {
+    if (!signalRService) return
+
+    const initializeSignalR = async () => {
+      try {
+        await signalRService.start()
+        setIsConnected(true)
+        setError(null)
+
+        // Set up event handlers
+        signalRService.onGameStateUpdated((updatedGameState: GameState) => {
+          setGameState(updatedGameState)
+        })
+
+        signalRService.onMoveReceived((move: Move) => {
+          setMoveHistory((prev) => [...prev, move])
+        })
+
+        signalRService.onGameCompleted((finalState: GameState) => {
+          setGameState(finalState)
+          setIsSimulating(false)
+        })
+
+        signalRService.onError((errorMessage: string) => {
+          setError(errorMessage)
+          setIsSimulating(false)
+        })
+      } catch {
+        setError('Failed to connect to game server')
+      }
+    }
+
+    initializeSignalR()
+
+    return () => {
+      signalRService.stop()
+    }
+  }, [signalRService])
+
+  const createSession = async (strategy: GameStrategy): Promise<string | null> => {
+    try {
+      const sessionData = await ApiService.createSession({ strategy })
+      setSession(sessionData)
+      return sessionData.sessionId
+    } catch {
+      setError('Failed to create game session')
+      return null
+    }
+  }
+
+  const startSimulation = async () => {
+    if (!isConnected || !signalRService) {
+      setError('Not connected to game server')
+      return
+    }
+
+    setIsSimulating(true)
+    setError(null)
+    setMoveHistory([])
+    setWinningSquares([])
+    setGameState({
+      board: Array(9).fill(null),
+      status: "in_progress",
+    })
+
+    try {
+      const sessionId = await createSession(selectedStrategy)
+      if (!sessionId) {
+        setIsSimulating(false)
+        return
+      }
+
+      await signalRService.joinGameSession(sessionId)
+      await ApiService.simulateGame(sessionId)
+    } catch {
+      setError('Failed to start game simulation')
+      setIsSimulating(false)
+    }
+  }
+
+  const renderSquare = (index: number) => {
+    const value = gameState.board[index]
+    const isWinning = winningSquares.includes(index)
+
+    return (
+      <div 
+        key={index} 
+        className={`relative w-16 h-16 border-2 border-slate-200 bg-white/80 backdrop-blur-sm
+                   flex items-center justify-center text-3xl font-bold
+                   transition-all duration-300 ease-out
+                   hover:bg-white hover:shadow-medium hover:scale-105
+                   active:scale-95 ${isWinning ? 'bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-300 shadow-glow-emerald' : ''}`}
+      >
+        {value === "X" && (
+          <X className="w-10 h-10 text-blue-600 animate-scale-in group-hover:scale-110 transition-transform duration-200" />
+        )}
+        {value === "O" && (
+          <Circle className="w-10 h-10 text-red-600 animate-scale-in group-hover:scale-110 transition-transform duration-200" />
+        )}
+        {value === null && (
+          <Square className="w-10 h-10 text-slate-200 opacity-0 group-hover:opacity-30 transition-opacity duration-200" />
+        )}
+      </div>
+    )
+  }
+
+  const getStatusMessage = () => {
+    switch (gameState.status) {
+      case "waiting":
+        return "Ready to start simulation"
+      case "in_progress":
+        return `Game in progress - ${gameState.currentPlayer || "X"}'s turn`
+      case "win":
+        return `Game Over - ${gameState.winner} wins!`
+      case "draw":
+        return "Game Over - It's a draw!"
+      default:
+        return "Unknown status"
+    }
+  }
+
+  const getStatusBadgeStyle = () => {
+    switch (gameState.status) {
+      case "waiting":
+        return "bg-slate-100 text-slate-700 border-slate-200"
+      case "in_progress":
+        return "bg-blue-100 text-blue-700 border-blue-200 animate-pulse-slow"
+      case "win":
+        return "bg-emerald-100 text-emerald-700 border-emerald-200"
+      case "draw":
+        return "bg-amber-100 text-amber-700 border-amber-200"
+      default:
+        return "bg-slate-100 text-slate-700 border-slate-200"
+    }
+  }
+
+  const selectedStrategyData = GAME_STRATEGIES.find((s) => s.value === selectedStrategy)
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 overflow-hidden">
+      <div className="relative z-10 p-2 sm:p-3 lg:p-4 h-screen flex flex-col">
+        <div className="max-w-7xl mx-auto flex-1 flex flex-col">
+          {/* Header */}
+          <div className="text-center mb-4 animate-fade-in">
+            <div className="inline-flex items-center gap-2 mb-2">
+              <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-large">
+                <Brain className="w-6 h-6 text-white" />
+              </div>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-900 via-blue-800 to-indigo-800 bg-clip-text text-transparent">
+                Automated Tic Tac Toe
+              </h1>
+            </div>
+            <p className="text-base text-slate-600 max-w-2xl mx-auto leading-relaxed">
+              Watch as intelligent microservices compete in strategic Tic Tac Toe battles
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 flex-1 min-h-0">
+            {/* Game Board Section */}
+            <div className="xl:col-span-2">
+              <Card className="p-4 bg-gradient-to-br from-white/90 to-slate-50/90 backdrop-blur-sm border border-slate-200/50 rounded-xl shadow-soft transition-all duration-300 ease-out hover:shadow-medium h-full flex flex-col">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                      <div className="p-1.5 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-lg">
+                        <Target className="w-5 h-5 text-blue-600" />
+                      </div>
+                      Game Arena
+                    </CardTitle>
+                    <div className={`px-4 py-2 rounded-full text-sm font-semibold tracking-wide transition-all duration-300 ease-out border ${getStatusBadgeStyle()}`}>
+                      {getStatusMessage()}
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4 flex-1 flex flex-col">
+                  {/* Strategy Selection */}
+                  <div className="space-y-2">
+                    <Label
+                      htmlFor="strategy-select"
+                      className="text-base font-semibold text-slate-700 flex items-center gap-2"
+                    >
+                      <Zap className="w-4 h-4 text-amber-500" />
+                      Game Strategy
+                    </Label>
+                    <Select
+                      value={selectedStrategy}
+                      onValueChange={(value: GameStrategy) => setSelectedStrategy(value)}
+                      disabled={isSimulating}
+                    >
+                      <SelectTrigger
+                        id="strategy-select"
+                        className="h-10 bg-white/80 backdrop-blur-sm border-slate-200/50 shadow-soft hover:shadow-medium transition-all duration-300"
+                      >
+                        <div className="flex items-center gap-2">
+                          {selectedStrategyData && (
+                            <div className={`p-1 rounded-lg bg-slate-50 ${selectedStrategyData.color}`}>
+                              {selectedStrategyData.icon}
+                            </div>
+                          )}
+                          <SelectValue placeholder="Select a strategy" />
+                        </div>
+                      </SelectTrigger>
+                      <SelectContent className="bg-white/95 backdrop-blur-md border-slate-200/50">
+                        {GAME_STRATEGIES.map((strategy) => (
+                          <SelectItem key={strategy.value} value={strategy.value} className="py-3">
+                            <div className="flex items-center gap-2">
+                              <div className={`p-1.5 rounded-lg bg-slate-50 ${strategy.color}`}>{strategy.icon}</div>
+                              <div className="flex flex-col">
+                                <span className="font-semibold text-slate-800">{strategy.label}</span>
+                                <span className="text-xs text-slate-500">{strategy.description}</span>
+                              </div>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Connection Status */}
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/60 backdrop-blur-sm border border-slate-200/50 shadow-soft">
+                    <div
+                      className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                        isConnected
+                          ? "bg-emerald-500 shadow-glow-emerald animate-pulse-slow"
+                          : "bg-red-500 shadow-glow-red"
+                      }`}
+                    />
+                    <span className="text-sm font-medium text-slate-700">
+                      {isConnected ? "Connected to game server" : "Disconnected from server"}
+                    </span>
+                    {isConnected && (
+                      <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-xs">
+                        Live
+                      </Badge>
+                    )}
+                  </div>
+
+                  {/* Error Display */}
+                  {error && (
+                    <Alert
+                      variant="destructive"
+                      className="bg-red-50/80 backdrop-blur-sm border-red-200/50 animate-slide-down"
+                    >
+                      <AlertCircle className="h-5 w-5" />
+                      <AlertDescription className="font-medium">{error}</AlertDescription>
+                    </Alert>
+                  )}
+
+                  {/* Game Board */}
+                  <div className="flex justify-center flex-1 items-center">
+                    <div className="p-4 bg-gradient-to-br from-white/90 to-slate-50/90 backdrop-blur-sm rounded-2xl shadow-large border border-slate-200/50">
+                      <div className="grid grid-cols-3 gap-1">
+                        {Array.from({ length: 9 }, (_, index) => renderSquare(index))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Controls */}
+                  <div className="flex justify-center">
+                    <Button
+                      onClick={startSimulation}
+                      disabled={!isConnected || isSimulating}
+                      size="lg"
+                      className="h-10 px-6 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 
+             text-white font-semibold rounded-xl shadow-large hover:shadow-glow-blue 
+             transition-all duration-300 ease-out hover:scale-105 active:scale-95
+             disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                    >
+                      {isSimulating ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Simulating...
+                        </>
+                      ) : (
+                        <>
+                          <Play className="w-4 h-4 mr-2" />
+                          Start Battle
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Move History Section */}
+            <div className="xl:col-span-1">
+              <Card className="p-4 bg-gradient-to-br from-white/90 to-slate-50/90 backdrop-blur-sm border border-slate-200/50 rounded-xl shadow-soft transition-all duration-300 ease-out hover:shadow-medium h-full flex flex-col">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                    <div className="p-1.5 bg-gradient-to-br from-amber-100 to-orange-100 rounded-lg">
+                      <Circle className="w-4 h-4 text-amber-600" />
+                    </div>
+                    Battle Log
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="flex-1 min-h-0">
+                  <div className="space-y-2 h-full overflow-y-auto custom-scrollbar">
+                    {moveHistory.length === 0 ? (
+                      <div className="text-center py-8">
+                        <div className="p-3 bg-slate-100 rounded-full w-fit mx-auto mb-3">
+                          <Square className="w-6 h-6 text-slate-400" />
+                        </div>
+                        <p className="text-slate-500 font-medium text-sm">No moves yet</p>
+                        <p className="text-xs text-slate-400 mt-1">Start a battle to see the action</p>
+                      </div>
+                    ) : (
+                      moveHistory.map((move, index) => (
+                        <div key={index} className="flex items-center justify-between p-2 bg-gradient-to-r from-white/80 to-slate-50/80 backdrop-blur-sm border border-slate-200/50 rounded-lg shadow-soft transition-all duration-300 ease-out hover:shadow-medium hover:scale-[1.01] animate-slide-up">
+                          <div className="flex items-center gap-3">
+                            <Badge
+                              variant="outline"
+                              className="bg-slate-50 text-slate-600 border-slate-200 font-mono text-xs"
+                            >
+                              #{index + 1}
+                            </Badge>
+                            <div className="flex items-center gap-2">
+                              <div
+                                className={`p-1.5 rounded-lg ${
+                                  move.player === "X" ? "bg-blue-100 text-blue-600" : "bg-red-100 text-red-600"
+                                }`}
+                              >
+                                {move.player === "X" ? <X className="w-3 h-3" /> : <Circle className="w-3 h-3" />}
+                              </div>
+                              <div>
+                                <span className="font-semibold text-slate-800 text-sm">Player {move.player}</span>
+                                <p className="text-xs text-slate-500">Position {move.position + 1}</p>
+                              </div>
+                            </div>
+                          </div>
+                          <span className="text-xs text-slate-400 font-mono">
+                            {new Date(move.timestamp).toLocaleTimeString()}
+                          </span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
+          {/* Session Info */}
+          {session && (
+            <Card className="mt-3 p-4 bg-gradient-to-br from-white/90 to-slate-50/90 backdrop-blur-sm border border-slate-200/50 rounded-xl shadow-soft transition-all duration-300 ease-out hover:shadow-medium animate-fade-in">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                  <div className="p-1.5 bg-gradient-to-br from-purple-100 to-pink-100 rounded-lg">
+                    <Cpu className="w-4 h-4 text-purple-600" />
+                  </div>
+                  Session Intelligence
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="p-3 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border border-blue-100">
+                    <span className="text-xs font-semibold text-blue-600 uppercase tracking-wide">Session ID</span>
+                    <p className="font-mono text-xs text-slate-700 mt-1 break-all">{session.sessionId}</p>
+                  </div>
+                  <div className="p-3 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-lg border border-emerald-100">
+                    <span className="text-xs font-semibold text-emerald-600 uppercase tracking-wide">Game ID</span>
+                    <p className="font-mono text-xs text-slate-700 mt-1 break-all">{session.gameId}</p>
+                  </div>
+                  <div className="p-3 bg-gradient-to-br from-amber-50 to-orange-50 rounded-lg border border-amber-100">
+                    <span className="text-xs font-semibold text-amber-600 uppercase tracking-wide">Strategy</span>
+                    <div className="flex items-center gap-1 mt-1">
+                      {selectedStrategyData && (
+                        <>
+                          <div className={`p-0.5 rounded ${selectedStrategyData.color}`}>
+                            {selectedStrategyData.icon}
+                          </div>
+                          <Badge variant="outline" className="bg-white/80 text-slate-700 border-slate-200 text-xs">
+                            {session.strategy}
+                          </Badge>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+} 
