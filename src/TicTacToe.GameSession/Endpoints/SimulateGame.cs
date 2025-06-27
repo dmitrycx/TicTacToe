@@ -94,10 +94,56 @@ public abstract class SimulateGameEndpointBase(
             var moveGenerator = moveGeneratorFactory.CreateGenerator(req.MoveStrategy ?? GameStrategy.Random);
             
             logger.LogInformation("Starting game simulation for session {SessionId}", req.SessionId);
-            // Simulate the game using the domain method
+            
+            // Start simulation and get moves
             var moves = await session.SimulateAsync(gameEngineClient, moveGenerator, req.MoveStrategy ?? GameStrategy.Random);
             
             logger.LogInformation("Simulation completed successfully for session {SessionId}. Total moves: {MoveCount}", req.SessionId, moves.Count);
+            
+            // Send SignalR notifications for each move
+            try
+            {
+                // Track the board state as moves are made
+                var board = new string?[9];
+                
+                foreach (var move in moves)
+                {
+                    // Update the board state for this move
+                    var index = move.Row * 3 + move.Column;
+                    board[index] = move.Player;
+                    
+                    var moveNotification = new
+                    {
+                        player = move.Player,
+                        position = move.Row * 3 + move.Column, // Convert to 0-8 index for UI
+                        timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
+                    };
+                    
+                    // Send move notification for Battle Log
+                    await signalRNotificationService.NotifyMoveReceivedAsync(session.Id.ToString(), moveNotification);
+                    
+                    // Send board state update for real-time board display
+                    var gameStateUpdate = new
+                    {
+                        board = board,
+                        status = "in_progress",
+                        currentPlayer = move.Player == "X" ? "O" : "X", // Next player
+                        winner = (string?)null
+                    };
+                    
+                    await signalRNotificationService.NotifyGameStateUpdatedAsync(session.Id.ToString(), gameStateUpdate);
+                    
+                    logger.LogDebug("Sent SignalR move and state notifications for session {SessionId}, move: {Move}", req.SessionId, move);
+                    
+                    // Delay to make each move visible in the UI (0.3 seconds)
+                    await Task.Delay(300, ct);
+                }
+            }
+            catch (Exception notificationEx)
+            {
+                logger.LogWarning(notificationEx, "Failed to send SignalR move notifications for session {SessionId}", req.SessionId);
+                // Don't fail the request if SignalR notification fails
+            }
             
             // Save the updated session
             await repository.SaveAsync(session);
@@ -109,7 +155,7 @@ public abstract class SimulateGameEndpointBase(
                 moves
             );
 
-            // Send SignalR notification to UI
+            // Send SignalR notification to UI for game completion
             try
             {
                 // Convert the moves to a board array that the UI expects
