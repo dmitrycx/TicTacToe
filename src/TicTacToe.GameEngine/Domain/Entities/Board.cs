@@ -13,11 +13,11 @@ public class Board
     }
 
     /// <summary>
-    /// Creates a Board from a string representation (List&lt;List&lt;string?&gt;&gt;).
+    /// Creates a Board from a string representation (List&lt;List&lt;string&gt;&gt;).
     /// </summary>
     /// <param name="boardState">The board state as a jagged array of strings.</param>
     /// <returns>A new Board instance with the specified state.</returns>
-    public static Board FromStringRepresentation(List<List<string?>> boardState)
+    public static Board FromStringRepresentation(List<List<string>> boardState)
     {
         var board = new Board();
         
@@ -27,7 +27,8 @@ public class Board
             for (var col = 0; col < 3 && col < rowList.Count; col++)
             {
                 var cellValue = rowList[col];
-                if (!string.IsNullOrEmpty(cellValue))
+                // Handle both null and empty string as empty cells
+                if (!string.IsNullOrEmpty(cellValue) && cellValue != "null")
                 {
                     if (Enum.TryParse<Player>(cellValue, out var player))
                     {

@@ -60,4 +60,6 @@ app.MapDefaultEndpoints(); // For Aspire health checks
 app.Run();
 
 // Make Program accessible for testing
-public partial class Program { }
+namespace TicTacToe.GameEngine {
+    public partial class Program { }
+}

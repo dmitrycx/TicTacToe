@@ -24,6 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\TicTacToe.Shared\TicTacToe.Shared.csproj" />
     <ProjectReference Include="..\..\aspire\TicTacToe.ServiceDefaults\TicTacToe.ServiceDefaults.csproj" />
   </ItemGroup>
 

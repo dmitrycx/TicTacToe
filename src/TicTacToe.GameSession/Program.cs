@@ -3,6 +3,7 @@ using FastEndpoints;
 using FastEndpoints.Swagger; // Use the native swagger generator
 using TicTacToe.GameSession.Hubs;
 using TicTacToe.GameSession.Services;
+using TicTacToe.GameSession.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -45,13 +46,19 @@ builder.Services.AddCors(options =>
 builder.Services.AddSingleton<IGameSessionRepository, InMemoryGameSessionRepository>();
 builder.Services.AddSingleton<IMoveGenerator, RandomMoveGenerator>();
 builder.Services.AddSingleton<IMoveGenerator, RuleBasedMoveGenerator>();
+builder.Services.AddSingleton<IMoveGenerator, AIMoveGenerator>();
 builder.Services.AddSingleton<IMoveGeneratorFactory, MoveGeneratorFactory>();
 builder.Services.AddScoped<ISignalRNotificationService, SignalRNotificationService>();
+
+// Configure HttpClient for GameEngine with proper SSL certificate handling for development
 builder.Services.AddHttpClient<IGameEngineApiClient, GameEngineHttpClient>(client =>
 {
-    client.BaseAddress = new Uri("http://gameengine");
+    var gameEngineUrl = builder.Configuration["GameEngineServiceUrl"] ?? "http://gameengine";
+    client.BaseAddress = new Uri(gameEngineUrl);
+}).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+{
+    ServerCertificateCustomValidationCallback = (sender, cert, chain, sslPolicyErrors) => true
 });
-
 
 var app = builder.Build();
 
@@ -89,4 +96,6 @@ app.MapDefaultEndpoints(); // For Aspire health checks
 app.Run();
 
 // Make Program accessible for testing
-public partial class Program { }
+namespace TicTacToe.GameSession {
+    public partial class Program { }
+}

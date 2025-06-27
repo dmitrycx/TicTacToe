@@ -5,6 +5,16 @@ import {
   GameSession 
 } from '@/types/game'
 
+export interface StrategyInfo {
+  name: string;
+  displayName: string;
+  description: string;
+}
+
+export interface ListStrategiesResponse {
+  strategies: StrategyInfo[];
+}
+
 export class ApiService {
   static async createSession(request: CreateSessionRequest): Promise<CreateSessionResponse> {
     const response = await fetch('/api/sessions', {
@@ -47,6 +57,21 @@ export class ApiService {
 
     if (!response.ok) {
       throw new Error(`Failed to get session: ${response.status}`)
+    }
+
+    return response.json()
+  }
+
+  static async getStrategies(): Promise<ListStrategiesResponse> {
+    const response = await fetch('/api/sessions/strategies', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch strategies: ${response.status}`)
     }
 
     return response.json()

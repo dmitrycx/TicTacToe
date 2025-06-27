@@ -1,11 +1,7 @@
 import https from 'https';
 import axios, { AxiosRequestConfig } from 'axios';
 
-const GAME_SESSION_SERVICE_URL = process.env.GAME_SESSION_SERVICE_URL;
-
-if (!GAME_SESSION_SERVICE_URL) {
-  throw new Error("Missing required environment variable: GAME_SESSION_SERVICE_URL");
-}
+const GAME_SESSION_SERVICE_URL = process.env.GAME_SESSION_SERVICE_URL || 'http://localhost:8081';
 
 // Create a single, reusable httpsAgent
 const httpsAgent = new https.Agent({

@@ -1,6 +1,7 @@
 using TicTacToe.GameEngine.Domain.Aggregates;
 using TicTacToe.GameEngine.Domain.Enums;
 using TicTacToe.GameEngine.Domain.ValueObjects;
+using TicTacToe.Shared.Enums;
 
 namespace TicTacToe.GameEngine.Tests.TestHelpers;
 

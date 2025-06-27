@@ -1,8 +1,14 @@
+using TicTacToe.GameEngine.Domain.Aggregates;
 using TicTacToe.GameEngine.Domain.Enums;
 using TicTacToe.GameEngine.Domain.ValueObjects;
-using TicTacToe.GameEngine.Domain.Entities;
 using TicTacToe.GameSession.Domain.Constants;
+using TicTacToe.GameSession.Domain.Entities;
+using TicTacToe.GameSession.Domain.Events;
+using TicTacToe.GameSession.Domain.Exceptions;
+using TicTacToe.GameSession.Domain.Services;
 using TicTacToe.GameSession.Endpoints;
+using TicTacToe.Shared.Enums;
+using TicTacToe.GameEngine.Domain.Entities;
 
 namespace TicTacToe.GameSession.Domain.Aggregates;
 
@@ -135,7 +141,7 @@ public class GameSession
             throw new InvalidSessionStateException(string.Format(SessionConstants.ErrorMessages.CannotRecordMoves, Status));
         }
         
-        var move = new Move(Id, player, position, MoveType.Random, _moves.Count + 1);
+        var move = new Move(Id, player, position, GameStrategy.Random, _moves.Count + 1);
         _moves.Add(move);
         _domainEvents.Add(new MoveMadeEvent(Id, move));
     }
@@ -232,7 +238,7 @@ public class GameSession
     public async Task<List<MoveInfo>> SimulateAsync(
         IGameEngineApiClient gameEngineClient, 
         IMoveGenerator moveGenerator,
-        MoveType moveStrategy = MoveType.Random)
+        GameStrategy moveStrategy = GameStrategy.Random)
     {
         if (Status != SessionStatus.Created)
         {
@@ -251,29 +257,57 @@ public class GameSession
             // Simulate moves until game is complete
             var moves = new List<MoveInfo>();
             var currentPlayer = Player.X;
+            var moveCount = 0;
             
             while (Status == SessionStatus.InProgress)
             {
+                moveCount++;
+                
                 // Get current game state from Game Engine
                 var gameState = await gameEngineClient.GetGameStateAsync(GameId);
+
+                // Defensive: break if game is already completed
+                if (gameState.Status == SessionConstants.Status.Completed || 
+                    gameState.Status == GameStatus.Win.ToString() || 
+                    gameState.Status == GameStatus.Draw.ToString())
+                {
+                    CompleteGame(gameState.Winner);
+                    Console.WriteLine($"[Simulation] Game completed. Winner: {gameState.Winner}");
+                    break;
+                }
+                
                 var board = Board.FromStringRepresentation(gameState.Board);
+                
+                // Log the current state before generating a move
+                Console.WriteLine($"[Simulation] Move {moveCount} - Player: {currentPlayer}, Game Status: {gameState.Status}");
+                Console.WriteLine($"[Simulation] Board state from GameEngine: {string.Join("|", gameState.Board.Select(row => string.Join(",", row)))}");
                 
                 // Generate move using the selected strategy
                 var position = moveGenerator.GenerateMove(currentPlayer, board);
+                Console.WriteLine($"[Simulation] Generated move: Row={position.Row}, Column={position.Column} for player {currentPlayer}");
+                
+                // VVVV ADD THIS LOGGING VVVV
+                Console.WriteLine($"[GameSession] Simulating move for Player '{currentPlayer}' at ({position.Row},{position.Column}) for GameId {GameId}.");
                 
                 // Make move in Game Engine
                 var moveRequest = new MakeMoveRequest(position.Row, position.Column);
+                Console.WriteLine($"[Simulation] Sending move request to GameEngine: GameId={GameId}, Row={moveRequest.Row}, Column={moveRequest.Column}");
+                
                 gameState = await gameEngineClient.MakeMoveAsync(GameId, moveRequest);
+                Console.WriteLine($"[Simulation] Move successful. New game status: {gameState.Status}, Winner: {gameState.Winner}");
                 
                 // Record move in session
                 RecordMove(position, currentPlayer);
                 
                 moves.Add(new MoveInfo(position.Row, position.Column, currentPlayer.ToString()));
 
-                // Check if game is complete
-                if (gameState.Status == SessionConstants.Status.Completed)
+                // Check if game is complete and update session status immediately
+                if (gameState.Status == SessionConstants.Status.Completed || 
+                    gameState.Status == GameStatus.Win.ToString() || 
+                    gameState.Status == GameStatus.Draw.ToString())
                 {
                     CompleteGame(gameState.Winner);
+                    Console.WriteLine($"[Simulation] Game completed. Winner: {gameState.Winner}");
                     break;
                 }
 
@@ -283,11 +317,23 @@ public class GameSession
 
             return moves;
         }
-        catch (Exception)
+        catch (HttpRequestException ex)
         {
             // Handle any errors during simulation
             FailSimulation();
-            throw;
+            throw new InvalidOperationException($"HTTP communication failed during simulation: {ex.Message}", ex);
+        }
+        catch (InvalidOperationException ex)
+        {
+            // Handle any errors during simulation
+            FailSimulation();
+            throw new InvalidOperationException($"Invalid operation during simulation: {ex.Message}", ex);
+        }
+        catch (Exception ex)
+        {
+            // Handle any errors during simulation
+            FailSimulation();
+            throw new InvalidOperationException($"Simulation failed: {ex.Message}", ex);
         }
     }
 

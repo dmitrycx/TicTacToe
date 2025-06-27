@@ -2,6 +2,7 @@ using TicTacToe.GameEngine.Domain.Enums;
 using TicTacToe.GameEngine.Domain.ValueObjects;
 using TicTacToe.GameEngine.Domain.Entities;
 using TicTacToe.GameSession.Endpoints;
+using TicTacToe.Shared.Enums;
 
 namespace TicTacToe.GameSession.Tests.Features.SimulateGame;
 

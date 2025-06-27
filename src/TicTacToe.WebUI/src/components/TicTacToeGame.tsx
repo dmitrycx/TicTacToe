@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -21,52 +21,8 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { GameState, GameStrategy, Move, GameSession } from '@/types/game'
-import { ApiService } from '@/services/api'
+import { ApiService, StrategyInfo } from '@/services/api'
 import { getSignalRService } from '@/services/signalr'
-
-const GAME_STRATEGIES: {
-  value: GameStrategy
-  label: string
-  description: string
-  icon: React.ReactNode
-  color: string
-}[] = [
-  {
-    value: "Random",
-    label: "Random",
-    description: "Makes random valid moves",
-    icon: <Shuffle className="w-4 h-4" />,
-    color: "text-slate-600",
-  },
-  {
-    value: "RuleBased",
-    label: "Rule-Based",
-    description: "Uses predefined rules and heuristics",
-    icon: <Target className="w-4 h-4" />,
-    color: "text-blue-600",
-  },
-  {
-    value: "AI",
-    label: "AI",
-    description: "Uses artificial intelligence algorithms",
-    icon: <Brain className="w-4 h-4" />,
-    color: "text-purple-600",
-  },
-  {
-    value: "MinMax",
-    label: "MinMax",
-    description: "Uses minimax algorithm for optimal play",
-    icon: <Zap className="w-4 h-4" />,
-    color: "text-emerald-600",
-  },
-  {
-    value: "AlphaBeta",
-    label: "Alpha-Beta",
-    description: "Enhanced minimax with alpha-beta pruning",
-    icon: <Cpu className="w-4 h-4" />,
-    color: "text-red-600",
-  },
-]
 
 export default function TicTacToeGame() {
   const [gameState, setGameState] = useState<GameState>({
@@ -80,6 +36,63 @@ export default function TicTacToeGame() {
   const [moveHistory, setMoveHistory] = useState<Move[]>([])
   const [selectedStrategy, setSelectedStrategy] = useState<GameStrategy>("Random")
   const [winningSquares, setWinningSquares] = useState<number[]>([])
+  
+  // NEW: Add state to hold the strategies fetched from the API
+  const [availableStrategies, setAvailableStrategies] = useState<StrategyInfo[]>([])
+
+  // NEW: Fetch strategies when the component mounts
+  useEffect(() => {
+    const fetchStrategies = async () => {
+      try {
+        const response = await ApiService.getStrategies()
+        setAvailableStrategies(response.strategies)
+        
+        // Set the first available strategy as default if we have strategies
+        if (response.strategies.length > 0) {
+          setSelectedStrategy(response.strategies[0].name as GameStrategy)
+        }
+      } catch (error) {
+        console.error("Failed to fetch strategies", error)
+        // Fallback to a default list if the API call fails
+        setAvailableStrategies([
+          { 
+            name: "Random", 
+            displayName: "Random",
+            description: "Makes random moves"
+          }
+        ])
+      }
+    }
+    fetchStrategies()
+  }, []) // Empty dependency array means this runs once on mount
+
+  // NEW: Use useMemo to map the fetched data to the UI structure with icons
+  const GAME_STRATEGIES_FOR_UI = useMemo(() => {
+    // Frontend handles UI concerns (icons and colors)
+    const iconMap: Record<string, React.ReactNode> = {
+      Random: <Shuffle className="w-4 h-4" />,
+      RuleBased: <Target className="w-4 h-4" />,
+      AI: <Brain className="w-4 h-4" />,
+      MinMax: <Zap className="w-4 h-4" />,
+      AlphaBeta: <Cpu className="w-4 h-4" />,
+    }
+    
+    const colorMap: Record<string, string> = {
+      Random: "text-slate-600",
+      RuleBased: "text-blue-600", 
+      AI: "text-purple-600",
+      MinMax: "text-emerald-600",
+      AlphaBeta: "text-red-600",
+    }
+
+    return availableStrategies.map(strategy => ({
+      value: strategy.name as GameStrategy,
+      label: strategy.displayName,
+      description: strategy.description,
+      icon: iconMap[strategy.name] || <Cpu className="w-4 h-4" />, // Default icon
+      color: colorMap[strategy.name] || "text-slate-600",
+    }))
+  }, [availableStrategies]) // This will re-run only when the fetched strategies change
 
   // Start SignalR connection
   useEffect(() => {
@@ -221,7 +234,7 @@ export default function TicTacToeGame() {
     }
   }
 
-  const selectedStrategyData = GAME_STRATEGIES.find((s) => s.value === selectedStrategy)
+  const selectedStrategyData = GAME_STRATEGIES_FOR_UI.find((s) => s.value === selectedStrategy)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 overflow-hidden">
@@ -288,7 +301,7 @@ export default function TicTacToeGame() {
                         </div>
                       </SelectTrigger>
                       <SelectContent className="bg-white/95 backdrop-blur-md border-slate-200/50">
-                        {GAME_STRATEGIES.map((strategy) => (
+                        {GAME_STRATEGIES_FOR_UI.map((strategy) => (
                           <SelectItem key={strategy.value} value={strategy.value} className="py-3">
                             <div className="flex items-center gap-2">
                               <div className={`p-1.5 rounded-lg bg-slate-50 ${strategy.color}`}>{strategy.icon}</div>

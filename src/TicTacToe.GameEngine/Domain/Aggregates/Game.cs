@@ -2,12 +2,12 @@ using TicTacToe.GameEngine.Domain.Entities;
 using TicTacToe.GameEngine.Domain.Enums;
 using TicTacToe.GameEngine.Domain.Exceptions;
 using TicTacToe.GameEngine.Domain.ValueObjects;
+using TicTacToe.Shared.Enums;
 
 namespace TicTacToe.GameEngine.Domain.Aggregates;
 
 /// <summary>
-/// Represents a Tic Tac Toe game aggregate root that manages the game state,
-/// validates moves, and determines game outcomes.
+/// Represents a Tic Tac Toe game aggregate.
 /// </summary>
 public class Game
 {
@@ -19,69 +19,72 @@ public class Game
     public DateTime CreatedAt { get; private set; }
     public DateTime? LastMoveAt { get; private set; }
 
-    private Game()
+    /// <summary>
+    /// Initializes a new instance of the Game class.
+    /// </summary>
+    public Game()
     {
+        Id = Guid.NewGuid();
         Board = new Board();
+        CurrentPlayer = Player.X;
+        Status = GameStatus.InProgress;
         CreatedAt = DateTime.UtcNow;
     }
 
-    /// <summary>
-    /// Creates a new Tic Tac Toe game with an empty board and initial state.
-    /// </summary>
-    /// <returns>A new Game instance with Player X as the first player and InProgress status.</returns>
     public static Game Create()
     {
-        return new Game
-        {
-            Id = Guid.NewGuid(),
-            CurrentPlayer = Player.X,
-            Status = GameStatus.InProgress
-        };
+        return new Game();
     }
 
     /// <summary>
-    /// Makes a move on the game board at the specified position.
+    /// Makes a move on the board.
     /// </summary>
-    /// <param name="position">The position on the board where the move should be made.</param>
-    /// <exception cref="InvalidMoveException">Thrown when the move is invalid (e.g., position out of bounds, cell occupied, or game already ended).</exception>
-    public void MakeMove(Position position)
+    /// <param name="position">The position to place the move.</param>
+    /// <param name="player">The player making the move.</param>
+    /// <exception cref="InvalidMoveException">Thrown when the move is invalid.</exception>
+    public void MakeMove(Position position, Player player)
     {
-        ValidateMove(position);
-
-        var movePlayer = CurrentPlayer;
-        Board.SetCell(position, movePlayer);
+        ValidateMove(position, player);
+        Board.SetCell(position, player);
         LastMoveAt = DateTime.UtcNow;
-
-        CheckGameStatus(movePlayer);
-
+        CheckGameStatus(player);
         if (Status == GameStatus.InProgress)
         {
-            SwitchPlayer();
+            CurrentPlayer = CurrentPlayer == Player.X ? Player.O : Player.X;
         }
     }
 
-    private void ValidateMove(Position position)
+    /// <summary>
+    /// Makes a move on the board using the current player.
+    /// </summary>
+    /// <param name="position">The position to place the move.</param>
+    /// <exception cref="InvalidMoveException">Thrown when the move is invalid.</exception>
+    public void MakeMove(Position position)
+    {
+        MakeMove(position, CurrentPlayer);
+    }
+
+    private void ValidateMove(Position position, Player player)
     {
         if (Status != GameStatus.InProgress)
         {
             throw new InvalidMoveException("Cannot make a move on a completed game.");
         }
 
+        if (player != CurrentPlayer)
+        {
+            throw new InvalidMoveException($"It's not {player}'s turn. Current player is {CurrentPlayer}.");
+        }
+
         if (!Board.IsCellEmpty(position))
         {
-            throw new InvalidMoveException($"Cell at position ({position.Row}, {position.Column}) is already occupied.");
+            throw new InvalidMoveException($"Position {position} is already occupied.");
         }
-    }
-
-    private void SwitchPlayer()
-    {
-        CurrentPlayer = CurrentPlayer == Player.X ? Player.O : Player.X;
     }
 
     private void CheckGameStatus(Player movePlayer)
     {
-        var hasWinner = HasWinner();
-        if (hasWinner)
+        if (HasWinningLine(movePlayer))
         {
             Status = GameStatus.Win;
             Winner = movePlayer;
@@ -89,40 +92,39 @@ public class Game
         else if (Board.IsFull())
         {
             Status = GameStatus.Draw;
-            Winner = null;
         }
     }
 
-    private bool HasWinner()
+    private bool HasWinningLine(Player player)
     {
         // Check rows
-        for (var row = 0; row < 3; row++)
+        for (int row = 0; row < 3; row++)
         {
-            if (CheckLine(row, 0, 0, 1)) return true;
+            if (IsWinningLine(row, 0, 0, 1, player)) return true;
         }
 
         // Check columns
-        for (var col = 0; col < 3; col++)
+        for (int col = 0; col < 3; col++)
         {
-            if (CheckLine(0, col, 1, 0)) return true;
+            if (IsWinningLine(0, col, 1, 0, player)) return true;
         }
 
         // Check diagonals
-        if (CheckLine(0, 0, 1, 1)) return true;
-        if (CheckLine(0, 2, 1, -1)) return true;
+        if (IsWinningLine(0, 0, 1, 1, player)) return true;
+        if (IsWinningLine(0, 2, 1, -1, player)) return true;
 
         return false;
     }
 
-    private bool CheckLine(int startRow, int startCol, int deltaRow, int deltaCol)
+    private bool IsWinningLine(int startRow, int startCol, int deltaRow, int deltaCol, Player player)
     {
         var firstCell = Board.GetCell(Position.Create(startRow, startCol));
-        if (!firstCell.HasValue) return false;
+        if (firstCell != player) return false;
 
-        for (var i = 1; i < 3; i++)
+        for (int i = 1; i < 3; i++)
         {
             var currentCell = Board.GetCell(Position.Create(startRow + i * deltaRow, startCol + i * deltaCol));
-            if (currentCell != firstCell) return false;
+            if (currentCell != player) return false;
         }
 
         return true;
