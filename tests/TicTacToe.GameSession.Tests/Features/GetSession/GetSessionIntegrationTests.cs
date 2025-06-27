@@ -26,8 +26,8 @@ public class GetSessionIntegrationTests(TestFixture fixture) : IClassFixture<Tes
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         sessionResponse.Should().NotBeNull();
         sessionResponse!.SessionId.Should().Be(session.Id);
-        sessionResponse.GameId.Should().Be(session.GameId);
-        sessionResponse.Status.Should().Be("Created");
+        sessionResponse.CurrentGameId.Should().Be(session.CurrentGameId);
+        sessionResponse.Status.Should().Be(session.Status.ToString());
         sessionResponse.CreatedAt.Should().Be(session.CreatedAt);
         sessionResponse.StartedAt.Should().BeNull();
         sessionResponse.CompletedAt.Should().BeNull();

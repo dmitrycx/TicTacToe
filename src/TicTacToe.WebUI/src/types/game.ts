@@ -8,17 +8,20 @@ export interface GameState {
   status: GameStatus
   winner?: Player
   currentPlayer?: Player
+  gameId?: string
 }
 
 export interface Move {
   player: Player
   position: number
   timestamp: string
+  gameId?: string
 }
 
 export interface GameSession {
   sessionId: string
-  gameId: string
+  currentGameId?: string
+  gameIds: string[]
   status: GameStatus
   strategy: GameStrategy
   moves: Move[]
@@ -30,7 +33,8 @@ export interface CreateSessionRequest {
 
 export interface CreateSessionResponse {
   sessionId: string
-  gameId: string
+  currentGameId?: string
+  gameIds: string[]
   status: GameStatus
   strategy: GameStrategy
   moves: Move[]
@@ -38,7 +42,8 @@ export interface CreateSessionResponse {
 
 export interface SimulateGameResponse {
   sessionId: string
-  gameId: string
+  currentGameId?: string
+  gameIds: string[]
   status: GameStatus
   winner?: Player
   moves: Move[]

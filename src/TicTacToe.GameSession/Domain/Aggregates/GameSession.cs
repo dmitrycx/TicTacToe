@@ -20,6 +20,7 @@ public class GameSession
 {
     private readonly List<Move> _moves = new();
     private readonly List<IDomainEvent> _domainEvents = new();
+    private readonly List<Guid> _gameIds = new();
 
     /// <summary>
     /// Unique identifier for the session.
@@ -27,9 +28,14 @@ public class GameSession
     public Guid Id { get; private set; }
     
     /// <summary>
-    /// Identifier of the game in the Game Engine Service.
+    /// List of all game IDs in this session.
     /// </summary>
-    public Guid GameId { get; private set; }
+    public IReadOnlyCollection<Guid> GameIds => _gameIds.AsReadOnly();
+    
+    /// <summary>
+    /// Current active game ID.
+    /// </summary>
+    public Guid CurrentGameId { get; private set; }
     
     /// <summary>
     /// Current status of the session.
@@ -92,11 +98,37 @@ public class GameSession
     public GameSession(Guid gameId)
     {
         Id = Guid.NewGuid();
-        GameId = gameId;
+        _gameIds.Add(gameId);
+        CurrentGameId = gameId;
         Status = SessionStatus.Created;
         CreatedAt = DateTime.UtcNow;
         
-        _domainEvents.Add(new SessionCreatedEvent(Id, GameId));
+        _domainEvents.Add(new SessionCreatedEvent(Id, CurrentGameId));
+    }
+
+    /// <summary>
+    /// Starts a new game in this session.
+    /// </summary>
+    /// <param name="gameId">The new game ID.</param>
+    public void StartNewGame(Guid gameId)
+    {
+        if (Status == SessionStatus.InProgress)
+        {
+            throw new InvalidSessionStateException("Cannot start new game while current game is in progress");
+        }
+        
+        _gameIds.Add(gameId);
+        CurrentGameId = gameId;
+        Status = SessionStatus.Created;
+        StartedAt = DateTime.UtcNow;
+        
+        // Clear previous game data
+        _moves.Clear();
+        Result = null;
+        Winner = null;
+        CompletedAt = null;
+        
+        _domainEvents.Add(new SimulationStartedEvent(Id));
     }
 
     /// <summary>
@@ -105,12 +137,13 @@ public class GameSession
     /// <param name="gameId">The game ID.</param>
     public void SetGameId(Guid gameId)
     {
-        if (GameId != Guid.Empty)
+        if (CurrentGameId != Guid.Empty)
         {
             throw new InvalidSessionStateException(SessionConstants.ErrorMessages.GameIdAlreadySet);
         }
         
-        GameId = gameId;
+        _gameIds.Add(gameId);
+        CurrentGameId = gameId;
     }
 
     /// <summary>
@@ -240,19 +273,21 @@ public class GameSession
         IMoveGenerator moveGenerator,
         GameStrategy moveStrategy = GameStrategy.Random)
     {
-        if (Status != SessionStatus.Created)
+        if (Status == SessionStatus.InProgress)
         {
             throw new InvalidSessionStateException(string.Format(SessionConstants.ErrorMessages.CannotStartSimulation, Status));
         }
 
         try
         {
-            // Start simulation
-            StartSimulation();
-
             // Create game in Game Engine
             var createGameResponse = await gameEngineClient.CreateGameAsync();
-            SetGameId(createGameResponse.GameId);
+            
+            // Start new game in this session
+            StartNewGame(createGameResponse.GameId);
+            
+            // Start simulation to set status to InProgress
+            StartSimulation();
             
             // Simulate moves until game is complete
             var moves = new List<MoveInfo>();
@@ -264,7 +299,7 @@ public class GameSession
                 moveCount++;
                 
                 // Get current game state from Game Engine
-                var gameState = await gameEngineClient.GetGameStateAsync(GameId);
+                var gameState = await gameEngineClient.GetGameStateAsync(CurrentGameId);
 
                 // Defensive: break if game is already completed
                 if (gameState.Status == SessionConstants.Status.Completed || 
@@ -287,13 +322,13 @@ public class GameSession
                 Console.WriteLine($"[Simulation] Generated move: Row={position.Row}, Column={position.Column} for player {currentPlayer}");
                 
                 // VVVV ADD THIS LOGGING VVVV
-                Console.WriteLine($"[GameSession] Simulating move for Player '{currentPlayer}' at ({position.Row},{position.Column}) for GameId {GameId}.");
+                Console.WriteLine($"[GameSession] Simulating move for Player '{currentPlayer}' at ({position.Row},{position.Column}) for GameId {CurrentGameId}.");
                 
                 // Make move in Game Engine
                 var moveRequest = new MakeMoveRequest(position.Row, position.Column);
-                Console.WriteLine($"[Simulation] Sending move request to GameEngine: GameId={GameId}, Row={moveRequest.Row}, Column={moveRequest.Column}");
+                Console.WriteLine($"[Simulation] Sending move request to GameEngine: GameId={CurrentGameId}, Row={moveRequest.Row}, Column={moveRequest.Column}");
                 
-                gameState = await gameEngineClient.MakeMoveAsync(GameId, moveRequest);
+                gameState = await gameEngineClient.MakeMoveAsync(CurrentGameId, moveRequest);
                 Console.WriteLine($"[Simulation] Move successful. New game status: {gameState.Status}, Winner: {gameState.Winner}");
                 
                 // Record move in session

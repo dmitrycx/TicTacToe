@@ -48,6 +48,8 @@ export class ApiService {
   }
 
   static async getSession(sessionId: string): Promise<GameSession> {
+    console.log(`[ApiService] Fetching session: ${sessionId}`)
+    
     const response = await fetch(`/api/sessions/${sessionId}`, {
       method: 'GET',
       headers: {
@@ -55,11 +57,17 @@ export class ApiService {
       },
     })
 
+    console.log(`[ApiService] Response status: ${response.status}`)
+    
     if (!response.ok) {
-      throw new Error(`Failed to get session: ${response.status}`)
+      const errorText = await response.text()
+      console.error(`[ApiService] Error response: ${errorText}`)
+      throw new Error(`Failed to get session: ${response.status} - ${errorText}`)
     }
 
-    return response.json()
+    const data = await response.json()
+    console.log(`[ApiService] Session data:`, data)
+    return data
   }
 
   static async getStrategies(): Promise<ListStrategiesResponse> {

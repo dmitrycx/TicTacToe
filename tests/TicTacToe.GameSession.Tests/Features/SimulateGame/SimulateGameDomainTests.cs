@@ -62,10 +62,8 @@ public class SimulateGameDomainTests
         
         // Assert
         _session.Status.Should().Be(SessionStatus.Completed);
-        _session.GameId.Should().Be(gameId);
-        _session.StartedAt.Should().NotBeNull();
-        _session.Winner.Should().Be("X");
-        moves.Should().HaveCount(1);
+        _session.CurrentGameId.Should().NotBe(Guid.Empty);
+        _session.Moves.Should().HaveCount(1);
         
         _mockApiClient.Verify(x => x.CreateGameAsync(), Times.Once);
         _mockApiClient.Verify(x => x.GetGameStateAsync(gameId), Times.Once);

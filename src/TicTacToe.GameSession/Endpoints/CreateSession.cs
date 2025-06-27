@@ -5,7 +5,7 @@ namespace TicTacToe.GameSession.Endpoints;
 /// <summary>
 /// Response DTO for creating a session.
 /// </summary>
-public record CreateSessionResponse(Guid SessionId, string Status);
+public record CreateSessionResponse(Guid SessionId, Guid CurrentGameId, List<Guid> GameIds, string Status);
 
 /// <summary>
 /// Endpoint for creating a new game session.
@@ -27,7 +27,7 @@ public abstract class CreateSessionEndpointBase(IGameSessionRepository repositor
     {
         var session = Domain.Aggregates.GameSession.Create();
         await repository.SaveAsync(session);
-        var response = new CreateSessionResponse(session.Id, session.Status.ToString());
+        var response = new CreateSessionResponse(session.Id, session.CurrentGameId, session.GameIds.ToList(), session.Status.ToString());
         await SendAsync(response, 201, ct);
     }
 }

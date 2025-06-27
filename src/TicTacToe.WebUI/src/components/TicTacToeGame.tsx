@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -36,6 +36,20 @@ export default function TicTacToeGame() {
   const [moveHistory, setMoveHistory] = useState<Move[]>([])
   const [selectedStrategy, setSelectedStrategy] = useState<GameStrategy>("Random")
   const [winningSquares, setWinningSquares] = useState<number[]>([])
+  const [currentGameId, setCurrentGameId] = useState<string | null>(null)
+  
+  // Use refs to access current values in SignalR event handlers
+  const sessionRef = useRef<GameSession | null>(null)
+  const currentGameIdRef = useRef<string | null>(null)
+  
+  // Update refs when state changes
+  useEffect(() => {
+    sessionRef.current = session
+  }, [session])
+  
+  useEffect(() => {
+    currentGameIdRef.current = currentGameId
+  }, [currentGameId])
   
   // NEW: Add state to hold the strategies fetched from the API
   const [availableStrategies, setAvailableStrategies] = useState<StrategyInfo[]>([])
@@ -107,16 +121,45 @@ export default function TicTacToeGame() {
 
         // Set up event handlers
         signalRService.onGameStateUpdated((updatedGameState: GameState) => {
-          setGameState(updatedGameState)
+          // Set current game ID if not set
+          if (updatedGameState.gameId && !currentGameIdRef.current) {
+            setCurrentGameId(updatedGameState.gameId)
+          }
+          
+          // Only update if this is for the current game
+          if (!currentGameIdRef.current || updatedGameState.gameId === currentGameIdRef.current) {
+            setGameState(updatedGameState)
+          }
         })
 
         signalRService.onMoveReceived((move: Move) => {
-          setMoveHistory((prev) => [...prev, move])
+          // Set current game ID if not set
+          if (move.gameId && !currentGameIdRef.current) {
+            setCurrentGameId(move.gameId)
+          }
+          
+          // Only add moves for the current game
+          if (!currentGameIdRef.current || move.gameId === currentGameIdRef.current) {
+            setMoveHistory((prev) => [...prev, move])
+          }
         })
 
         signalRService.onGameCompleted((finalState: GameState) => {
-          setGameState(finalState)
-          setIsSimulating(false)
+          // Set current game ID if not set
+          if (finalState.gameId && !currentGameIdRef.current) {
+            setCurrentGameId(finalState.gameId)
+          }
+          
+          // Only update if this is for the current game
+          if (!currentGameIdRef.current || finalState.gameId === currentGameIdRef.current) {
+            setGameState(finalState)
+            setIsSimulating(false)
+            
+            // Refresh session data to get the final GameId and other updated information
+            if (sessionRef.current?.sessionId) {
+              refreshSession(sessionRef.current.sessionId)
+            }
+          }
         })
 
         signalRService.onError((errorMessage: string) => {
@@ -134,7 +177,7 @@ export default function TicTacToeGame() {
     return () => {
       // Cleanup will be handled by the singleton
     }
-  }, [])
+  }, []) // Empty dependency array - only run once on mount
 
   const createSession = async (strategy: GameStrategy): Promise<string | null> => {
     try {
@@ -144,6 +187,17 @@ export default function TicTacToeGame() {
     } catch {
       setError('Failed to create game session')
       return null
+    }
+  }
+
+  const refreshSession = async (sessionId: string) => {
+    try {
+      const sessionData = await ApiService.getSession(sessionId)
+      setSession(sessionData)
+    } catch (error) {
+      console.error('Failed to refresh session data:', error)
+      // Don't throw the error - just log it and continue
+      // The session data will be updated when the user starts a new simulation
     }
   }
 
@@ -164,14 +218,28 @@ export default function TicTacToeGame() {
 
     try {
       const signalRService = getSignalRService()
-      const sessionId = await createSession(selectedStrategy)
-      if (!sessionId) {
-        setIsSimulating(false)
-        return
+      
+      // Create session only if none exists
+      let sessionId: string
+      if (!session) {
+        const newSessionId = await createSession(selectedStrategy)
+        if (!newSessionId) {
+          setIsSimulating(false)
+          return
+        }
+        sessionId = newSessionId
+      } else {
+        sessionId = session.sessionId
       }
+
+      // Set current game ID to null initially - it will be updated when we get the first notification
+      setCurrentGameId(null)
 
       await signalRService.joinGameSession(sessionId)
       await ApiService.simulateGame(sessionId)
+      
+      // Refresh session data to get the updated GameId
+      setTimeout(() => refreshSession(sessionId), 1000)
     } catch {
       setError('Failed to start game simulation')
       setIsSimulating(false)
@@ -460,14 +528,22 @@ export default function TicTacToeGame() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                   <div className="p-3 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border border-blue-100">
                     <span className="text-xs font-semibold text-blue-600 uppercase tracking-wide">Session ID</span>
                     <p className="font-mono text-xs text-slate-700 mt-1 break-all">{session.sessionId}</p>
                   </div>
                   <div className="p-3 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-lg border border-emerald-100">
-                    <span className="text-xs font-semibold text-emerald-600 uppercase tracking-wide">Game ID</span>
-                    <p className="font-mono text-xs text-slate-700 mt-1 break-all">{session.gameId}</p>
+                    <span className="text-xs font-semibold text-emerald-600 uppercase tracking-wide">Current Game ID</span>
+                    <p className="font-mono text-xs text-slate-700 mt-1 break-all">
+                      {session.currentGameId || "Not yet created"}
+                    </p>
+                  </div>
+                  <div className="p-3 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg border border-purple-100">
+                    <span className="text-xs font-semibold text-purple-600 uppercase tracking-wide">Games Played</span>
+                    <p className="font-mono text-xs text-slate-700 mt-1">
+                      {session.gameIds.length} games
+                    </p>
                   </div>
                   <div className="p-3 bg-gradient-to-br from-amber-50 to-orange-50 rounded-lg border border-amber-100">
                     <span className="text-xs font-semibold text-amber-600 uppercase tracking-wide">Strategy</span>

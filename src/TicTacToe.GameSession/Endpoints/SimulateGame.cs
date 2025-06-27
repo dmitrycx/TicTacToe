@@ -79,9 +79,9 @@ public abstract class SimulateGameEndpointBase(
             return;
         }
 
-        if (session.Status != SessionStatus.Created)
+        if (session.Status != SessionStatus.Created && session.Status != SessionStatus.Completed)
         {
-            logger.LogWarning("Session {SessionId} is not in Created state. Current state: {Status}", req.SessionId, session.Status);
+            logger.LogWarning("Session {SessionId} is not in Created or Completed state. Current state: {Status}", req.SessionId, session.Status);
             AddError(SessionConstants.ErrorMessages.SessionNotInCreatedState);
             await SendErrorsAsync(400, ct);
             return;
@@ -116,7 +116,8 @@ public abstract class SimulateGameEndpointBase(
                     {
                         player = move.Player,
                         position = move.Row * 3 + move.Column, // Convert to 0-8 index for UI
-                        timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
+                        timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                        gameId = session.CurrentGameId // Include current game ID
                     };
                     
                     // Send move notification for Battle Log
@@ -128,7 +129,8 @@ public abstract class SimulateGameEndpointBase(
                         board = board,
                         status = "in_progress",
                         currentPlayer = move.Player == "X" ? "O" : "X", // Next player
-                        winner = (string?)null
+                        winner = (string?)null,
+                        gameId = session.CurrentGameId // Include current game ID
                     };
                     
                     await signalRNotificationService.NotifyGameStateUpdatedAsync(session.Id.ToString(), gameStateUpdate);
@@ -171,7 +173,8 @@ public abstract class SimulateGameEndpointBase(
                     board = board,
                     status = session.Status == SessionStatus.Completed ? "win" : "in_progress",
                     winner = session.Winner,
-                    currentPlayer = session.Status == SessionStatus.Completed ? null : "X"
+                    currentPlayer = session.Status == SessionStatus.Completed ? null : "X",
+                    gameId = session.CurrentGameId // Include current game ID
                 };
                 
                 await signalRNotificationService.NotifyGameCompletedAsync(session.Id.ToString(), finalGameState);

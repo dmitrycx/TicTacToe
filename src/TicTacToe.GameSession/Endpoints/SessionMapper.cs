@@ -12,14 +12,20 @@ public static class SessionMapper
     /// <returns>The mapped response DTO.</returns>
     public static GetSessionResponse ToResponse(this TicTacToe.GameSession.Domain.Aggregates.GameSession session)
     {
+        if (session == null)
+        {
+            throw new ArgumentNullException(nameof(session));
+        }
+
         return new GetSessionResponse(
             session.Id,
-            session.GameId,
+            session.CurrentGameId,
+            session.GameIds?.ToList() ?? new List<Guid>(),
             session.Status.ToString(),
             session.CreatedAt,
             session.StartedAt,
             session.CompletedAt,
-            session.Moves.Select(m => new MoveInfo(m.Position.Row, m.Position.Column, m.Player.ToString())).ToList(),
+            session.Moves?.Select(m => new MoveInfo(m.Position.Row, m.Position.Column, m.Player.ToString())).ToList() ?? new List<MoveInfo>(),
             session.Winner?.ToString(),
             session.Result?.ToString()
         );
