@@ -18,7 +18,7 @@ import {
   Target, 
   Cpu 
 } from 'lucide-react'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { GameState, GameStrategy, Move, GameSession } from '@/types/game'
 import { ApiService, StrategyInfo } from '@/services/api'
@@ -187,15 +187,16 @@ export default function TicTacToeGame() {
         key={index} 
         className={`relative w-16 h-16 border-2 border-slate-200 bg-white/80 backdrop-blur-sm
                    flex items-center justify-center text-3xl font-bold
-                   transition-all duration-300 ease-out
-                   hover:bg-white hover:shadow-medium hover:scale-105
-                   active:scale-95 ${isWinning ? 'bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-300 shadow-glow-emerald' : ''}`}
+                   transition-all duration-300 ease-out transform-gpu
+                   hover:bg-white hover:border-slate-300 hover:-translate-y-0.5
+                   active:scale-95
+                   ${isWinning ? 'bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-300 shadow-glow-emerald' : ''}`}
       >
         {value === "X" && (
-          <X className="w-10 h-10 text-blue-600 animate-scale-in group-hover:scale-110 transition-transform duration-200" />
+          <X className="w-10 h-10 text-blue-600 animate-scale-in transition-all duration-200 hover:text-blue-700" />
         )}
         {value === "O" && (
-          <Circle className="w-10 h-10 text-red-600 animate-scale-in group-hover:scale-110 transition-transform duration-200" />
+          <Circle className="w-10 h-10 text-red-600 animate-scale-in transition-all duration-200 hover:text-red-700" />
         )}
         {value === null && (
           <Square className="w-10 h-10 text-slate-200 opacity-0 group-hover:opacity-30 transition-opacity duration-200" />
@@ -293,11 +294,16 @@ export default function TicTacToeGame() {
                       >
                         <div className="flex items-center gap-2">
                           {selectedStrategyData && (
-                            <div className={`p-1 rounded-lg bg-slate-50 ${selectedStrategyData.color}`}>
-                              {selectedStrategyData.icon}
-                            </div>
+                            <>
+                              <div className={`p-1 rounded-lg bg-slate-50 ${selectedStrategyData.color}`}>
+                                {selectedStrategyData.icon}
+                              </div>
+                              <span className="font-medium text-slate-800">{selectedStrategyData.label}</span>
+                            </>
                           )}
-                          <SelectValue placeholder="Select a strategy" />
+                          {!selectedStrategyData && (
+                            <span className="text-slate-500">Select a strategy</span>
+                          )}
                         </div>
                       </SelectTrigger>
                       <SelectContent className="bg-white/95 backdrop-blur-md border-slate-200/50">
@@ -362,9 +368,11 @@ export default function TicTacToeGame() {
                       disabled={!isConnected || isSimulating}
                       size="lg"
                       className="h-10 px-6 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 
-             text-white font-semibold rounded-xl shadow-large hover:shadow-glow-blue 
-             transition-all duration-300 ease-out hover:scale-105 active:scale-95
-             disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+               text-white font-semibold rounded-xl shadow-large
+               transition-all duration-300 ease-out transform-gpu
+               hover:brightness-110 hover:-translate-y-0.5
+               active:scale-95 active:brightness-90
+               disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:brightness-100"
                     >
                       {isSimulating ? (
                         <>
@@ -385,7 +393,7 @@ export default function TicTacToeGame() {
 
             {/* Move History Section */}
             <div className="xl:col-span-1">
-              <Card className="p-4 bg-gradient-to-br from-white/90 to-slate-50/90 backdrop-blur-sm border border-slate-200/50 rounded-xl shadow-soft transition-all duration-300 ease-out hover:shadow-medium h-full flex flex-col">
+              <Card className="p-4 bg-gradient-to-br from-white/90 to-slate-50/90 backdrop-blur-sm border border-slate-200/50 rounded-xl shadow-soft transition-all duration-300 ease-out h-full flex flex-col">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-lg font-bold text-slate-800 flex items-center gap-2">
                     <div className="p-1.5 bg-gradient-to-br from-amber-100 to-orange-100 rounded-lg">
@@ -406,7 +414,7 @@ export default function TicTacToeGame() {
                       </div>
                     ) : (
                       moveHistory.map((move, index) => (
-                        <div key={index} className="flex items-center justify-between p-2 bg-gradient-to-r from-white/80 to-slate-50/80 backdrop-blur-sm border border-slate-200/50 rounded-lg shadow-soft transition-all duration-300 ease-out hover:shadow-medium hover:scale-[1.01] animate-slide-up">
+                        <div key={index} className="flex items-center justify-between p-2 bg-gradient-to-r from-white/80 to-slate-50/80 backdrop-blur-sm border border-slate-200/50 rounded-lg shadow-soft transition-all duration-300 ease-out hover:bg-white/90 hover:-translate-y-px animate-slide-up transform-gpu">
                           <div className="flex items-center gap-3">
                             <Badge
                               variant="outline"
@@ -442,7 +450,7 @@ export default function TicTacToeGame() {
 
           {/* Session Info */}
           {session && (
-            <Card className="mt-3 p-4 bg-gradient-to-br from-white/90 to-slate-50/90 backdrop-blur-sm border border-slate-200/50 rounded-xl shadow-soft transition-all duration-300 ease-out hover:shadow-medium animate-fade-in">
+            <Card className="mt-3 p-4 bg-gradient-to-br from-white/90 to-slate-50/90 backdrop-blur-sm border border-slate-200/50 rounded-xl shadow-soft transition-all duration-300 ease-out animate-fade-in">
               <CardHeader className="pb-2">
                 <CardTitle className="text-lg font-bold text-slate-800 flex items-center gap-2">
                   <div className="p-1.5 bg-gradient-to-br from-purple-100 to-pink-100 rounded-lg">
@@ -484,4 +492,4 @@ export default function TicTacToeGame() {
       </div>
     </div>
   )
-} 
+}

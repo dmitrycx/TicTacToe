@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { serverApiRequest } from '@/lib/server-api';
 import { AxiosError } from 'axios';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Use the serverApiRequest utility which handles SSL certificates properly
     const apiResponse = await serverApiRequest({

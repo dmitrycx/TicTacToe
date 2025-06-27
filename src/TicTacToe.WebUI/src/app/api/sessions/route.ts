@@ -2,9 +2,6 @@ import { NextResponse } from 'next/server'
 import { serverApiRequest } from '@/lib/server-api'
 import { AxiosError } from 'axios'
 
-// Server-side environment variable (not exposed to client)
-const GAME_SESSION_SERVICE_URL = process.env.GAME_SESSION_SERVICE_URL || 'http://localhost:5002'
-
 /**
  * @swagger
  * /api/sessions:

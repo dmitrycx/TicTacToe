@@ -4,7 +4,7 @@ import { GameState, Move } from '@/types/game'
 const SIGNALR_HUB_URL = process.env.NEXT_PUBLIC_SIGNALR_HUB_URL || 'http://localhost:5001/gameHub'
 
 class SignalRService {
-  private connection: any = null
+  private connection: import('@microsoft/signalr').HubConnection | null = null
   private isInitialized = false
   private static instance: SignalRService | null = null
 

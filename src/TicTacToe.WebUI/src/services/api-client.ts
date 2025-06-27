@@ -1,4 +1,4 @@
-import { GameSessionClient, TicTacToeGameSessionEndpointsSimulateGameRequest } from './generated-client';
+import { GameSessionClient, TicTacToeGameSessionEndpointsSimulateGameRequest, TicTacToeGameSessionDomainEnumsMoveType } from './generated-client';
 
 // Create a singleton instance of the generated client
 const gameSessionClient = new GameSessionClient();
@@ -20,7 +20,7 @@ export class ApiClient {
   }
 
   // Session Management
-  async createSession(player1Name: string, player2Name: string, gameType: string) {
+  async createSession() {
     try {
       const response = await this.gameSessionClient.ticTacToeGameSessionEndpointsCreateSessionEndpoint();
       return response;
@@ -64,7 +64,7 @@ export class ApiClient {
     try {
       const request = new TicTacToeGameSessionEndpointsSimulateGameRequest();
       if (moveStrategy) {
-        request.moveStrategy = moveStrategy as any;
+        request.moveStrategy = moveStrategy as TicTacToeGameSessionDomainEnumsMoveType;
       }
       const response = await this.gameSessionClient.ticTacToeGameSessionEndpointsSimulateGameEndpoint(sessionId, request);
       return response;

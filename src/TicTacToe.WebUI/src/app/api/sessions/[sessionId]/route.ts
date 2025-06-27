@@ -2,9 +2,6 @@ import { NextResponse } from 'next/server'
 import { serverApiRequest } from '@/lib/server-api'
 import { AxiosError } from 'axios'
 
-// Server-side environment variable (not exposed to client)
-const GAME_SESSION_SERVICE_URL = process.env.GAME_SESSION_SERVICE_URL
-
 /**
  * @swagger
  * /api/sessions/{sessionId}:
@@ -93,7 +90,7 @@ export async function DELETE(
     const { sessionId } = await params
     
     // Use the new axios-based request utility
-    const apiResponse = await serverApiRequest({
+    await serverApiRequest({
       method: 'DELETE',
       url: `/sessions/${sessionId}`,
     })
