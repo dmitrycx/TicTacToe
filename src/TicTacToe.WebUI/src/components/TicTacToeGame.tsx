@@ -22,7 +22,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label'
 import { GameState, GameStrategy, Move, GameSession } from '@/types/game'
 import { ApiService } from '@/services/api'
-import { SignalRService } from '@/services/signalr'
+import { getSignalRService } from '@/services/signalr'
 
 const GAME_STRATEGIES: {
   value: GameStrategy
@@ -74,7 +74,6 @@ export default function TicTacToeGame() {
     status: "waiting",
   })
   const [session, setSession] = useState<GameSession | null>(null)
-  const [signalRService, setSignalRService] = useState<SignalRService | null>(null)
   const [isConnected, setIsConnected] = useState(false)
   const [isSimulating, setIsSimulating] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -82,20 +81,13 @@ export default function TicTacToeGame() {
   const [selectedStrategy, setSelectedStrategy] = useState<GameStrategy>("Random")
   const [winningSquares, setWinningSquares] = useState<number[]>([])
 
-  // Initialize SignalR connection
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const service = new SignalRService()
-      setSignalRService(service)
-    }
-  }, [])
-
   // Start SignalR connection
   useEffect(() => {
-    if (!signalRService) return
+    if (typeof window === 'undefined') return
 
     const initializeSignalR = async () => {
       try {
+        const signalRService = getSignalRService()
         await signalRService.start()
         setIsConnected(true)
         setError(null)
@@ -118,7 +110,8 @@ export default function TicTacToeGame() {
           setError(errorMessage)
           setIsSimulating(false)
         })
-      } catch {
+      } catch (error) {
+        console.error('SignalR initialization error:', error)
         setError('Failed to connect to game server')
       }
     }
@@ -126,9 +119,9 @@ export default function TicTacToeGame() {
     initializeSignalR()
 
     return () => {
-      signalRService.stop()
+      // Cleanup will be handled by the singleton
     }
-  }, [signalRService])
+  }, [])
 
   const createSession = async (strategy: GameStrategy): Promise<string | null> => {
     try {
@@ -142,7 +135,7 @@ export default function TicTacToeGame() {
   }
 
   const startSimulation = async () => {
-    if (!isConnected || !signalRService) {
+    if (!isConnected) {
       setError('Not connected to game server')
       return
     }
@@ -157,6 +150,7 @@ export default function TicTacToeGame() {
     })
 
     try {
+      const signalRService = getSignalRService()
       const sessionId = await createSession(selectedStrategy)
       if (!sessionId) {
         setIsSimulating(false)

@@ -5,11 +5,9 @@ import {
   GameSession 
 } from '@/types/game'
 
-const GAME_SESSION_SERVICE_URL = process.env.NEXT_PUBLIC_GAME_SESSION_SERVICE_URL || 'http://localhost:5001'
-
 export class ApiService {
   static async createSession(request: CreateSessionRequest): Promise<CreateSessionResponse> {
-    const response = await fetch(`${GAME_SESSION_SERVICE_URL}/sessions`, {
+    const response = await fetch('/api/sessions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -25,7 +23,7 @@ export class ApiService {
   }
 
   static async simulateGame(sessionId: string): Promise<SimulateGameResponse> {
-    const response = await fetch(`${GAME_SESSION_SERVICE_URL}/sessions/${sessionId}/simulate`, {
+    const response = await fetch(`/api/sessions/${sessionId}/simulate`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -40,7 +38,7 @@ export class ApiService {
   }
 
   static async getSession(sessionId: string): Promise<GameSession> {
-    const response = await fetch(`${GAME_SESSION_SERVICE_URL}/sessions/${sessionId}`, {
+    const response = await fetch(`/api/sessions/${sessionId}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

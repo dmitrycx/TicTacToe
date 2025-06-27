@@ -1,0 +1,9 @@
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedCorsOrigins": "https://your-production-ui.vercel.app;https://your-production-ui.netlify.app"
+} 

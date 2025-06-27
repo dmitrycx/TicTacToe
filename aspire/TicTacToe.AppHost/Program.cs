@@ -41,8 +41,8 @@ else
     // This is for fast, inner-loop development with hot reload and debugging.
     Console.WriteLine("Running in Project Mode...");
 
-    gameEngine = builder.AddProject<Projects.TicTacToe_GameEngine>("game-engine")
-        .WithEndpoint(scheme: "http", name: "http");
+    gameEngine = builder.AddProject<Projects.TicTacToe_GameEngine>("game-engine");
+        
     gameSession = builder.AddProject<Projects.TicTacToe_GameSession>("game-session")
         .WithReference(gameEngine.GetEndpoint("http"));
 }
