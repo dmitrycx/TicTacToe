@@ -307,7 +307,7 @@ npm test
 # Unit tests with coverage
 npm run test:coverage
 
-# E2E tests (Playwright) - Basic UI rendering test
+# Run E2E tests (basic UI rendering test that doesn't require backend)
 npm run test:e2e
 
 # E2E tests with UI (interactive mode)
@@ -316,8 +316,6 @@ npm run test:e2e:ui
 # E2E tests in headed mode (see browser)
 npm run test:e2e:headed
 ```
-
-**Note:** The E2E test suite includes a reliable basic rendering test that works without backend dependencies, making it suitable for CI/CD pipelines.
 
 ### Testing Strategy
 

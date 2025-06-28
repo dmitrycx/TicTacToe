@@ -1,25 +1,21 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor, act } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import TicTacToeGame from '@/components/TicTacToeGame'
+import { ApiService } from '@/services/api'
+import { getSignalRService } from '@/services/signalr'
 
-// Mock the API client
-jest.mock('@/services/api-client', () => ({
-  apiClient: {
-    listSessions: jest.fn(),
+// Mock the API service
+jest.mock('@/services/api', () => ({
+  ApiService: {
+    getStrategies: jest.fn(),
     createSession: jest.fn(),
+    getSession: jest.fn(),
     simulateGame: jest.fn(),
   },
 }))
 
 // Mock SignalR service
 jest.mock('@/services/signalr', () => ({
-  useSignalRConnection: jest.fn(() => ({
-    connection: {
-      state: 'Connected',
-      on: jest.fn(),
-      off: jest.fn(),
-    },
-    isConnected: true,
-  })),
   getSignalRService: jest.fn(() => ({
     start: jest.fn().mockResolvedValue(undefined),
     joinGameSession: jest.fn().mockResolvedValue(undefined),
@@ -27,37 +23,214 @@ jest.mock('@/services/signalr', () => ({
     onMoveReceived: jest.fn(),
     onGameCompleted: jest.fn(),
     onError: jest.fn(),
+    getConnectionState: jest.fn().mockReturnValue(true),
   })),
 }))
 
+// Mock the window object for SignalR
+Object.defineProperty(window, 'GAME_SESSION_SERVICE_URL', {
+  value: 'http://localhost:8081',
+  writable: true,
+})
+
 describe('TicTacToeGame', () => {
-  it('renders the main header', () => {
-    render(<TicTacToeGame />)
-    expect(screen.getByTestId('main-header')).toBeInTheDocument()
+  const mockApiService = ApiService as jest.Mocked<typeof ApiService>
+  const mockSignalRService = getSignalRService() as jest.Mocked<ReturnType<typeof getSignalRService>>
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    
+    // Default API responses
+    mockApiService.getStrategies.mockResolvedValue({
+      strategies: [
+        { name: 'Random', displayName: 'Random', description: 'Makes random moves' },
+        { name: 'RuleBased', displayName: 'Rule Based', description: 'Uses basic rules' },
+      ]
+    })
+    
+    mockApiService.createSession.mockResolvedValue({
+      sessionId: 'test-session-id',
+      currentGameId: 'test-game-id',
+      gameIds: ['test-game-id'],
+      status: 'waiting',
+      strategy: 'Random',
+      moves: []
+    })
+    
+    mockApiService.simulateGame.mockResolvedValue({
+      sessionId: 'test-session-id',
+      currentGameId: 'test-game-id',
+      gameIds: ['test-game-id'],
+      status: 'win',
+      winner: 'X',
+      moves: [
+        { player: 'X', position: 0, timestamp: '2024-01-01T00:00:00Z', gameId: 'test-game-id' },
+        { player: 'O', position: 4, timestamp: '2024-01-01T00:00:01Z', gameId: 'test-game-id' },
+      ]
+    })
   })
 
-  it('renders the game arena title', () => {
-    render(<TicTacToeGame />)
-    expect(screen.getByTestId('game-arena-title')).toBeInTheDocument()
+  it('renders the main header', async () => {
+    await act(async () => {
+      render(<TicTacToeGame />)
+    })
+    
+    await waitFor(() => {
+      expect(screen.getByTestId('main-header')).toBeInTheDocument()
+    })
   })
 
-  it('renders the game board', () => {
-    render(<TicTacToeGame />)
-    expect(screen.getByTestId('game-board')).toBeInTheDocument()
+  it('renders the game arena title', async () => {
+    await act(async () => {
+      render(<TicTacToeGame />)
+    })
+    
+    await waitFor(() => {
+      expect(screen.getByTestId('game-arena-title')).toBeInTheDocument()
+    })
   })
 
-  it('renders the start battle button', () => {
-    render(<TicTacToeGame />)
-    expect(screen.getByTestId('start-battle-btn')).toBeInTheDocument()
+  it('renders the game board', async () => {
+    await act(async () => {
+      render(<TicTacToeGame />)
+    })
+    
+    await waitFor(() => {
+      expect(screen.getByTestId('game-board')).toBeInTheDocument()
+    })
   })
 
-  it('renders the game status badge', () => {
-    render(<TicTacToeGame />)
-    expect(screen.getByTestId('game-status-badge')).toBeInTheDocument()
+  it('renders the start battle button', async () => {
+    await act(async () => {
+      render(<TicTacToeGame />)
+    })
+    
+    await waitFor(() => {
+      expect(screen.getByTestId('start-battle-btn')).toBeInTheDocument()
+    })
   })
 
-  it('renders the connection status', () => {
-    render(<TicTacToeGame />)
-    expect(screen.getByTestId('connection-status')).toBeInTheDocument()
+  it('renders the game status badge', async () => {
+    await act(async () => {
+      render(<TicTacToeGame />)
+    })
+    
+    await waitFor(() => {
+      expect(screen.getByTestId('game-status-badge')).toBeInTheDocument()
+    })
+  })
+
+  it('renders the connection status', async () => {
+    await act(async () => {
+      render(<TicTacToeGame />)
+    })
+    
+    await waitFor(() => {
+      expect(screen.getByTestId('connection-status')).toBeInTheDocument()
+    })
+  })
+
+  it('loads strategies on mount', async () => {
+    await act(async () => {
+      render(<TicTacToeGame />)
+    })
+    
+    await waitFor(() => {
+      expect(mockApiService.getStrategies).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  it('creates a session when start battle is clicked', async () => {
+    const user = userEvent.setup()
+    
+    await act(async () => {
+      render(<TicTacToeGame />)
+    })
+    
+    await waitFor(() => {
+      expect(screen.getByTestId('start-battle-btn')).toBeInTheDocument()
+    })
+    
+    await act(async () => {
+      await user.click(screen.getByTestId('start-battle-btn'))
+    })
+    
+    await waitFor(() => {
+      expect(mockApiService.createSession).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  it('shows error when session creation fails', async () => {
+    const user = userEvent.setup()
+    mockApiService.createSession.mockRejectedValue(new Error('Failed to create session'))
+    
+    await act(async () => {
+      render(<TicTacToeGame />)
+    })
+    
+    await waitFor(() => {
+      expect(screen.getByTestId('start-battle-btn')).toBeInTheDocument()
+    })
+    
+    await act(async () => {
+      await user.click(screen.getByTestId('start-battle-btn'))
+    })
+    
+    await waitFor(() => {
+      expect(screen.getByTestId('error-alert')).toBeInTheDocument()
+    })
+  })
+
+  it('displays strategy selection dropdown', async () => {
+    await act(async () => {
+      render(<TicTacToeGame />)
+    })
+    
+    await waitFor(() => {
+      expect(screen.getByText('Game Strategy')).toBeInTheDocument()
+    })
+  })
+
+  it('renders all 9 game board cells', async () => {
+    await act(async () => {
+      render(<TicTacToeGame />)
+    })
+    
+    await waitFor(() => {
+      const cells = screen.getAllByTestId(/board-cell-\d+/)
+      expect(cells).toHaveLength(9)
+    })
+  })
+
+  it('shows loading state during simulation', async () => {
+    const user = userEvent.setup()
+    
+    // Mock a delayed response to test loading state
+    mockApiService.createSession.mockImplementation(() => 
+      new Promise(resolve => setTimeout(() => resolve({
+        sessionId: 'test-session-id',
+        currentGameId: 'test-game-id',
+        gameIds: ['test-game-id'],
+        status: 'waiting',
+        strategy: 'Random',
+        moves: []
+      }), 100))
+    )
+    
+    await act(async () => {
+      render(<TicTacToeGame />)
+    })
+    
+    await waitFor(() => {
+      expect(screen.getByTestId('start-battle-btn')).toBeInTheDocument()
+    })
+    
+    await act(async () => {
+      await user.click(screen.getByTestId('start-battle-btn'))
+    })
+    
+    await waitFor(() => {
+      expect(screen.getByTestId('loading-indicator')).toBeInTheDocument()
+    })
   })
 }) 
