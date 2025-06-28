@@ -3,9 +3,9 @@
 # 1. Build Stage
 FROM node:20-alpine AS builder
 WORKDIR /app
-COPY src/TicTacToe.WebUI/package*.json ./
+COPY package*.json ./
 RUN npm install
-COPY src/TicTacToe.WebUI/ .
+COPY . .
 RUN npm run build
 
 # 2. Production Stage
