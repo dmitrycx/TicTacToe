@@ -360,6 +360,16 @@ The application uses .NET Aspire for environment variable injection and service 
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
+## 📋 Third-Party Licenses
+
+This project uses several third-party libraries with various open-source licenses:
+
+- **Sharp image processing libraries** use LGPL-2.0, LGPL-2.1, LGPL-3.0, and MPL-2.0 licenses
+- **caniuse-lite** uses CC-BY-4.0 license for browser compatibility data
+- **tslib** uses 0BSD license
+
+These libraries are used as dependencies and are not modified. Users may replace these libraries with their own versions as permitted by the respective licenses.
+
 ## 🙏 Acknowledgments
 
 - Built with [.NET 9](https://dotnet.microsoft.com/)
