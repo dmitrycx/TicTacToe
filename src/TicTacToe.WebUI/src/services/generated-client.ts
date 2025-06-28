@@ -15,7 +15,10 @@ export class GameSessionClient {
 
     constructor(baseUrl?: string, http?: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> }) {
         this.http = http ? http : window as any;
-        this.baseUrl = baseUrl ?? "http://localhost:37053";
+        // Use Aspire-injected service URL or fallback to provided baseUrl or default
+        this.baseUrl = baseUrl ?? (typeof window !== 'undefined' 
+            ? (window as any).__NEXT_DATA__?.props?.pageProps?.gameSessionServiceUrl 
+            : process.env.NEXT_PUBLIC_GAME_SESSION_SERVICE_URL) ?? "http://localhost:37053";
     }
 
     /**

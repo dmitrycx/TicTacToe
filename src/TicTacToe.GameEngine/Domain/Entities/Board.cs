@@ -17,7 +17,7 @@ public class Board
     /// </summary>
     /// <param name="boardState">The board state as a jagged array of strings.</param>
     /// <returns>A new Board instance with the specified state.</returns>
-    public static Board FromStringRepresentation(List<List<string>> boardState)
+    public static Board FromStringRepresentation(List<List<string?>> boardState)
     {
         var board = new Board();
         

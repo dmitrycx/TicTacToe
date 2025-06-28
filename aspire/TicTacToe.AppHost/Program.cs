@@ -47,8 +47,15 @@ else
         .WithReference(gameEngine.GetEndpoint("http"));
 }
 
+// --- Frontend Service ---
+var nextJsApp = builder.AddNodeApp("nextjs-ui", "../../src/TicTacToe.WebUI/aspire-entry.js")
+                       .WithReference(gameSession.GetEndpoint("http"))
+                       .WithHttpEndpoint(env: "PORT")
+                       .WithExternalHttpEndpoints();
+
 // Apply common settings to the resources regardless of how they were created.
 gameEngine.WithExternalHttpEndpoints();
 gameSession.WithExternalHttpEndpoints();
+nextJsApp.WithExternalHttpEndpoints();
 
 builder.Build().Run();

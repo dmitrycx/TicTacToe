@@ -1,12 +1,30 @@
 import https from 'https';
 import axios, { AxiosRequestConfig } from 'axios';
 
-const GAME_SESSION_SERVICE_URL = process.env.GAME_SESSION_SERVICE_URL || 'http://localhost:8081';
+// Debug: Log all environment variables to see what's available
+console.log("Available environment variables:", Object.keys(process.env).filter(key => key.includes('service') || key.includes('game')));
+
+// Aspire injects this environment variable.
+// It finds the 'game-session' resource and its 'http' endpoint.
+const GAME_SESSION_SERVICE_URL = process.env['services__game-session__http__0'] || 
+                                 process.env.NEXT_PUBLIC_GAME_SESSION_SERVICE_URL || 
+                                 'http://localhost:8081';
+
+if (!process.env['services__game-session__http__0']) {
+  // Fallback for when not running under Aspire
+  console.warn("Aspire service URL not found, falling back to configured URL:", GAME_SESSION_SERVICE_URL);
+} else {
+  console.log("Using Aspire-injected service URL:", GAME_SESSION_SERVICE_URL);
+}
 
 // Create a single, reusable httpsAgent
-const httpsAgent = new https.Agent({
-  rejectUnauthorized: false, // For development with self-signed certs
+const httpsAgent = new https.Agent({ 
+  rejectUnauthorized: false // For development with self-signed certs
 });
+
+if (!GAME_SESSION_SERVICE_URL) {
+  console.warn("Aspire service URL 'services__game-session__http__0' not found. Ensure the AppHost is running and the reference is configured.");
+}
 
 // Create a single, pre-configured axios instance
 const serverApiClient = axios.create({

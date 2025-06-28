@@ -41,6 +41,32 @@ builder.Services.AddCors(options =>
               .AllowAnyMethod()
               .AllowCredentials();
     });
+    
+    // Production-ready development policy
+    options.AddPolicy("DevelopmentPolicy", policy =>
+    {
+        if (builder.Environment.IsDevelopment())
+        {
+            // In development: Allow localhost with any port
+            policy.SetIsOriginAllowed(origin => 
+                origin.StartsWith("http://localhost:") || 
+                origin.StartsWith("https://localhost:") ||
+                origin.StartsWith("http://127.0.0.1:") ||
+                origin.StartsWith("https://127.0.0.1:")
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+        }
+        else
+        {
+            // In production: Use strict origin validation
+            policy.WithOrigins(allowedOrigins)
+                  .AllowAnyHeader()
+                  .AllowAnyMethod()
+                  .AllowCredentials();
+        }
+    });
 });
 
 builder.Services.AddSingleton<IGameSessionRepository, InMemoryGameSessionRepository>();
@@ -67,12 +93,17 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
+    // Disable HTTPS redirection only in development to avoid certificate issues
+    // In production, this should be enabled with proper SSL certificates
 }
-app.UseHttpsRedirection();
+else
+{
+    app.UseHttpsRedirection(); // Enable HTTPS redirection in production
+}
 app.UseRouting();
 
 // Add CORS middleware here - it must be between UseRouting and UseEndpoints/UseFastEndpoints
-app.UseCors("SignalRPolicy");
+app.UseCors("DevelopmentPolicy"); // Use the more permissive policy
 
 // This is the correct combination for the "pretty" NSwag UI
 // powered by the reliable FastEndpoints generator.
@@ -90,7 +121,7 @@ app.UseFastEndpoints(c =>
     c.Serializer.Options.Converters.Add(new JsonStringEnumConverter());
 });
 
-app.MapHub<GameHub>("/gameHub").RequireCors("SignalRPolicy");
+app.MapHub<GameHub>("/gameHub").RequireCors("DevelopmentPolicy");
 app.MapDefaultEndpoints(); // For Aspire health checks
 
 app.Run();

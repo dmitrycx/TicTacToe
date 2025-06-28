@@ -13,8 +13,8 @@ public record StrategyInfo(
 
 public record ListStrategiesResponse(List<StrategyInfo> Strategies);
 
-// 2. Create the endpoint
-public class ListStrategiesEndpoint(IMoveGeneratorFactory factory) 
+// 2. Create the endpoint with abstract base class pattern
+public abstract class ListStrategiesEndpointBase(IMoveGeneratorFactory factory) 
     : EndpointWithoutRequest<ListStrategiesResponse>
 {
     public override void Configure()
@@ -69,4 +69,10 @@ public class ListStrategiesEndpoint(IMoveGeneratorFactory factory)
             Description: "An available game strategy."
         )
     };
+}
+
+// Concrete implementation for FastEndpoints discovery
+public class ListStrategiesEndpoint : ListStrategiesEndpointBase
+{
+    public ListStrategiesEndpoint(IMoveGeneratorFactory factory) : base(factory) { }
 } 

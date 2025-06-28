@@ -253,21 +253,21 @@ export default function TicTacToeGame() {
     return (
       <div 
         key={index} 
-        className={`relative w-16 h-16 border-2 border-slate-200 bg-white/80 backdrop-blur-sm
-                   flex items-center justify-center text-3xl font-bold
+        className={`relative w-12 h-12 sm:w-16 sm:h-16 border-2 border-slate-200 bg-white/80 backdrop-blur-sm
+                   flex items-center justify-center text-2xl sm:text-3xl font-bold
                    transition-all duration-300 ease-out transform-gpu
                    hover:bg-white hover:border-slate-300 hover:-translate-y-0.5
                    active:scale-95
                    ${isWinning ? 'bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-300 shadow-glow-emerald' : ''}`}
       >
         {value === "X" && (
-          <X className="w-10 h-10 text-blue-600 animate-scale-in transition-all duration-200 hover:text-blue-700" />
+          <X className="w-6 h-6 sm:w-10 sm:h-10 text-blue-600 animate-scale-in transition-all duration-200 hover:text-blue-700" />
         )}
         {value === "O" && (
-          <Circle className="w-10 h-10 text-red-600 animate-scale-in transition-all duration-200 hover:text-red-700" />
+          <Circle className="w-6 h-6 sm:w-10 sm:h-10 text-red-600 animate-scale-in transition-all duration-200 hover:text-red-700" />
         )}
         {value === null && (
-          <Square className="w-10 h-10 text-slate-200 opacity-0 group-hover:opacity-30 transition-opacity duration-200" />
+          <Square className="w-6 h-6 sm:w-10 sm:h-10 text-slate-200 opacity-0 group-hover:opacity-30 transition-opacity duration-200" />
         )}
       </div>
     )
@@ -306,49 +306,50 @@ export default function TicTacToeGame() {
   const selectedStrategyData = GAME_STRATEGIES_FOR_UI.find((s) => s.value === selectedStrategy)
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 overflow-hidden">
-      <div className="relative z-10 p-2 sm:p-3 lg:p-4 h-screen flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
+      <div className="relative z-10 p-2 sm:p-3 lg:p-4 min-h-screen flex flex-col">
         <div className="max-w-7xl mx-auto flex-1 flex flex-col">
           {/* Header */}
-          <div className="text-center mb-4 animate-fade-in">
-            <div className="inline-flex items-center gap-2 mb-2">
-              <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-large">
-                <Brain className="w-6 h-6 text-white" />
+          <div className="text-center mb-3 sm:mb-4 animate-fade-in">
+            <div className="inline-flex items-center gap-1 sm:gap-2 mb-1 sm:mb-2">
+              <div className="p-1.5 sm:p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-large">
+                <Brain className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
               </div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-900 via-blue-800 to-indigo-800 bg-clip-text text-transparent">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-slate-900 via-blue-800 to-indigo-800 bg-clip-text text-transparent">
                 Automated Tic Tac Toe
               </h1>
             </div>
-            <p className="text-base text-slate-600 max-w-2xl mx-auto leading-relaxed">
+            <p className="text-sm sm:text-base text-slate-600 max-w-2xl mx-auto leading-relaxed px-2">
               Watch as intelligent microservices compete in strategic Tic Tac Toe battles
             </p>
           </div>
 
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 flex-1 min-h-0">
+          {/* Main Content Grid - Responsive Layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 flex-1 min-h-0">
             {/* Game Board Section */}
-            <div className="xl:col-span-2">
-              <Card className="p-4 bg-gradient-to-br from-white/90 to-slate-50/90 backdrop-blur-sm border border-slate-200/50 rounded-xl shadow-soft transition-all duration-300 ease-out hover:shadow-medium h-full flex flex-col">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                      <div className="p-1.5 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-lg">
-                        <Target className="w-5 h-5 text-blue-600" />
+            <div className="lg:col-span-2 xl:col-span-3">
+              <Card className="p-3 sm:p-4 bg-gradient-to-br from-white/90 to-slate-50/90 backdrop-blur-sm border border-slate-200/50 rounded-xl shadow-soft transition-all duration-300 ease-out hover:shadow-medium h-full flex flex-col">
+                <CardHeader className="pb-2 sm:pb-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
+                    <CardTitle className="text-lg sm:text-xl font-bold text-slate-800 flex items-center gap-2">
+                      <div className="p-1 sm:p-1.5 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-lg">
+                        <Target className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
                       </div>
                       Game Arena
                     </CardTitle>
-                    <div className={`px-4 py-2 rounded-full text-sm font-semibold tracking-wide transition-all duration-300 ease-out border ${getStatusBadgeStyle()}`}>
+                    <div className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold tracking-wide transition-all duration-300 ease-out border ${getStatusBadgeStyle()}`}>
                       {getStatusMessage()}
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-4 flex-1 flex flex-col">
+                <CardContent className="space-y-3 sm:space-y-4 flex-1 flex flex-col">
                   {/* Strategy Selection */}
                   <div className="space-y-2">
                     <Label
                       htmlFor="strategy-select"
-                      className="text-base font-semibold text-slate-700 flex items-center gap-2"
+                      className="text-sm sm:text-base font-semibold text-slate-700 flex items-center gap-2"
                     >
-                      <Zap className="w-4 h-4 text-amber-500" />
+                      <Zap className="w-3 h-3 sm:w-4 sm:h-4 text-amber-500" />
                       Game Strategy
                     </Label>
                     <Select
@@ -358,7 +359,7 @@ export default function TicTacToeGame() {
                     >
                       <SelectTrigger
                         id="strategy-select"
-                        className="h-10 bg-white/80 backdrop-blur-sm border-slate-200/50 shadow-soft hover:shadow-medium transition-all duration-300"
+                        className="h-9 sm:h-10 bg-white/80 backdrop-blur-sm border-slate-200/50 shadow-soft hover:shadow-medium transition-all duration-300"
                       >
                         <div className="flex items-center gap-2">
                           {selectedStrategyData && (
@@ -366,21 +367,21 @@ export default function TicTacToeGame() {
                               <div className={`p-1 rounded-lg bg-slate-50 ${selectedStrategyData.color}`}>
                                 {selectedStrategyData.icon}
                               </div>
-                              <span className="font-medium text-slate-800">{selectedStrategyData.label}</span>
+                              <span className="font-medium text-slate-800 text-sm sm:text-base">{selectedStrategyData.label}</span>
                             </>
                           )}
                           {!selectedStrategyData && (
-                            <span className="text-slate-500">Select a strategy</span>
+                            <span className="text-slate-500 text-sm sm:text-base">Select a strategy</span>
                           )}
                         </div>
                       </SelectTrigger>
                       <SelectContent className="bg-white/95 backdrop-blur-md border-slate-200/50">
                         {GAME_STRATEGIES_FOR_UI.map((strategy) => (
-                          <SelectItem key={strategy.value} value={strategy.value} className="py-3">
+                          <SelectItem key={strategy.value} value={strategy.value} className="py-2 sm:py-3">
                             <div className="flex items-center gap-2">
-                              <div className={`p-1.5 rounded-lg bg-slate-50 ${strategy.color}`}>{strategy.icon}</div>
+                              <div className={`p-1 sm:p-1.5 rounded-lg bg-slate-50 ${strategy.color}`}>{strategy.icon}</div>
                               <div className="flex flex-col">
-                                <span className="font-semibold text-slate-800">{strategy.label}</span>
+                                <span className="font-semibold text-slate-800 text-sm sm:text-base">{strategy.label}</span>
                                 <span className="text-xs text-slate-500">{strategy.description}</span>
                               </div>
                             </div>
@@ -391,15 +392,15 @@ export default function TicTacToeGame() {
                   </div>
 
                   {/* Connection Status */}
-                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/60 backdrop-blur-sm border border-slate-200/50 shadow-soft">
+                  <div className="flex items-center gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg bg-white/60 backdrop-blur-sm border border-slate-200/50 shadow-soft">
                     <div
-                      className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                      className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full transition-all duration-300 ${
                         isConnected
                           ? "bg-emerald-500 shadow-glow-emerald animate-pulse-slow"
                           : "bg-red-500 shadow-glow-red"
                       }`}
                     />
-                    <span className="text-sm font-medium text-slate-700">
+                    <span className="text-xs sm:text-sm font-medium text-slate-700">
                       {isConnected ? "Connected to game server" : "Disconnected from server"}
                     </span>
                     {isConnected && (
@@ -415,15 +416,15 @@ export default function TicTacToeGame() {
                       variant="destructive"
                       className="bg-red-50/80 backdrop-blur-sm border-red-200/50 animate-slide-down"
                     >
-                      <AlertCircle className="h-5 w-5" />
-                      <AlertDescription className="font-medium">{error}</AlertDescription>
+                      <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5" />
+                      <AlertDescription className="font-medium text-sm sm:text-base">{error}</AlertDescription>
                     </Alert>
                   )}
 
                   {/* Game Board */}
                   <div className="flex justify-center flex-1 items-center">
-                    <div className="p-4 bg-gradient-to-br from-white/90 to-slate-50/90 backdrop-blur-sm rounded-2xl shadow-large border border-slate-200/50">
-                      <div className="grid grid-cols-3 gap-1">
+                    <div className="p-2 sm:p-4 bg-gradient-to-br from-white/90 to-slate-50/90 backdrop-blur-sm rounded-2xl shadow-large border border-slate-200/50">
+                      <div className="grid grid-cols-3 gap-0.5 sm:gap-1">
                         {Array.from({ length: 9 }, (_, index) => renderSquare(index))}
                       </div>
                     </div>
@@ -435,8 +436,8 @@ export default function TicTacToeGame() {
                       onClick={startSimulation}
                       disabled={!isConnected || isSimulating}
                       size="lg"
-                      className="h-10 px-6 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 
-               text-white font-semibold rounded-xl shadow-large
+                      className="min-w-[160px] h-9 sm:h-10 px-4 sm:px-6 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 
+               text-white font-semibold rounded-xl shadow-large text-sm sm:text-base
                transition-all duration-300 ease-out transform-gpu
                hover:brightness-110 hover:-translate-y-0.5
                active:scale-95 active:brightness-90
@@ -444,12 +445,12 @@ export default function TicTacToeGame() {
                     >
                       {isSimulating ? (
                         <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 sm:mr-2 animate-spin" />
                           Simulating...
                         </>
                       ) : (
                         <>
-                          <Play className="w-4 h-4 mr-2" />
+                          <Play className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
                           Start Battle
                         </>
                       )}
@@ -460,46 +461,46 @@ export default function TicTacToeGame() {
             </div>
 
             {/* Move History Section */}
-            <div className="xl:col-span-1">
-              <Card className="p-4 bg-gradient-to-br from-white/90 to-slate-50/90 backdrop-blur-sm border border-slate-200/50 rounded-xl shadow-soft transition-all duration-300 ease-out h-full flex flex-col">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                    <div className="p-1.5 bg-gradient-to-br from-amber-100 to-orange-100 rounded-lg">
-                      <Circle className="w-4 h-4 text-amber-600" />
+            <div className="lg:col-span-1 xl:col-span-1">
+              <Card className="p-3 sm:p-4 bg-gradient-to-br from-white/90 to-slate-50/90 backdrop-blur-sm border border-slate-200/50 rounded-xl shadow-soft transition-all duration-300 ease-out h-full flex flex-col">
+                <CardHeader className="pb-2 sm:pb-3">
+                  <CardTitle className="text-base sm:text-lg font-bold text-slate-800 flex items-center gap-2">
+                    <div className="p-1 sm:p-1.5 bg-gradient-to-br from-amber-100 to-orange-100 rounded-lg">
+                      <Circle className="w-3 h-3 sm:w-4 sm:h-4 text-amber-600" />
                     </div>
                     Battle Log
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="flex-1 min-h-0">
-                  <div className="space-y-2 h-full overflow-y-auto custom-scrollbar">
+                  <div className="space-y-1.5 sm:space-y-2 h-full overflow-y-auto custom-scrollbar">
                     {moveHistory.length === 0 ? (
-                      <div className="text-center py-8">
-                        <div className="p-3 bg-slate-100 rounded-full w-fit mx-auto mb-3">
-                          <Square className="w-6 h-6 text-slate-400" />
+                      <div className="text-center py-6 sm:py-8">
+                        <div className="p-2 sm:p-3 bg-slate-100 rounded-full w-fit mx-auto mb-2 sm:mb-3">
+                          <Square className="w-4 h-4 sm:w-6 sm:h-6 text-slate-400" />
                         </div>
-                        <p className="text-slate-500 font-medium text-sm">No moves yet</p>
+                        <p className="text-slate-500 font-medium text-xs sm:text-sm">No moves yet</p>
                         <p className="text-xs text-slate-400 mt-1">Start a battle to see the action</p>
                       </div>
                     ) : (
                       moveHistory.map((move, index) => (
-                        <div key={index} className="flex items-center justify-between p-2 bg-gradient-to-r from-white/80 to-slate-50/80 backdrop-blur-sm border border-slate-200/50 rounded-lg shadow-soft transition-all duration-300 ease-out hover:bg-white/90 hover:-translate-y-px animate-slide-up transform-gpu">
-                          <div className="flex items-center gap-3">
+                        <div key={index} className="flex items-center justify-between p-1.5 sm:p-2 bg-gradient-to-r from-white/80 to-slate-50/80 backdrop-blur-sm border border-slate-200/50 rounded-lg shadow-soft transition-all duration-300 ease-out hover:bg-white/90 hover:-translate-y-px animate-slide-up transform-gpu">
+                          <div className="flex items-center gap-2 sm:gap-3">
                             <Badge
                               variant="outline"
                               className="bg-slate-50 text-slate-600 border-slate-200 font-mono text-xs"
                             >
                               #{index + 1}
                             </Badge>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1.5 sm:gap-2">
                               <div
-                                className={`p-1.5 rounded-lg ${
+                                className={`p-1 sm:p-1.5 rounded-lg ${
                                   move.player === "X" ? "bg-blue-100 text-blue-600" : "bg-red-100 text-red-600"
                                 }`}
                               >
-                                {move.player === "X" ? <X className="w-3 h-3" /> : <Circle className="w-3 h-3" />}
+                                {move.player === "X" ? <X className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> : <Circle className="w-2.5 h-2.5 sm:w-3 sm:h-3" />}
                               </div>
                               <div>
-                                <span className="font-semibold text-slate-800 text-sm">Player {move.player}</span>
+                                <span className="font-semibold text-slate-800 text-xs sm:text-sm">Player {move.player}</span>
                                 <p className="text-xs text-slate-500">Position {move.position + 1}</p>
                               </div>
                             </div>
@@ -516,36 +517,36 @@ export default function TicTacToeGame() {
             </div>
           </div>
 
-          {/* Session Info */}
+          {/* Session Info - Always visible and scrollable */}
           {session && (
-            <Card className="mt-3 p-4 bg-gradient-to-br from-white/90 to-slate-50/90 backdrop-blur-sm border border-slate-200/50 rounded-xl shadow-soft transition-all duration-300 ease-out animate-fade-in">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                  <div className="p-1.5 bg-gradient-to-br from-purple-100 to-pink-100 rounded-lg">
-                    <Cpu className="w-4 h-4 text-purple-600" />
+            <Card className="mt-3 sm:mt-4 p-3 sm:p-4 bg-gradient-to-br from-white/90 to-slate-50/90 backdrop-blur-sm border border-slate-200/50 rounded-xl shadow-soft transition-all duration-300 ease-out animate-fade-in">
+              <CardHeader className="pb-1 sm:pb-2">
+                <CardTitle className="text-base sm:text-lg font-bold text-slate-800 flex items-center gap-2">
+                  <div className="p-1 sm:p-1.5 bg-gradient-to-br from-purple-100 to-pink-100 rounded-lg">
+                    <Cpu className="w-3 h-3 sm:w-4 sm:h-4 text-purple-600" />
                   </div>
                   Session Intelligence
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                  <div className="p-3 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border border-blue-100">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+                  <div className="p-2 sm:p-3 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border border-blue-100">
                     <span className="text-xs font-semibold text-blue-600 uppercase tracking-wide">Session ID</span>
                     <p className="font-mono text-xs text-slate-700 mt-1 break-all">{session.sessionId}</p>
                   </div>
-                  <div className="p-3 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-lg border border-emerald-100">
+                  <div className="p-2 sm:p-3 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-lg border border-emerald-100">
                     <span className="text-xs font-semibold text-emerald-600 uppercase tracking-wide">Current Game ID</span>
                     <p className="font-mono text-xs text-slate-700 mt-1 break-all">
                       {session.currentGameId || "Not yet created"}
                     </p>
                   </div>
-                  <div className="p-3 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg border border-purple-100">
+                  <div className="p-2 sm:p-3 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg border border-purple-100">
                     <span className="text-xs font-semibold text-purple-600 uppercase tracking-wide">Games Played</span>
                     <p className="font-mono text-xs text-slate-700 mt-1">
                       {session.gameIds.length} games
                     </p>
                   </div>
-                  <div className="p-3 bg-gradient-to-br from-amber-50 to-orange-50 rounded-lg border border-amber-100">
+                  <div className="p-2 sm:p-3 bg-gradient-to-br from-amber-50 to-orange-50 rounded-lg border border-amber-100">
                     <span className="text-xs font-semibold text-amber-600 uppercase tracking-wide">Strategy</span>
                     <div className="flex items-center gap-1 mt-1">
                       {selectedStrategyData && (

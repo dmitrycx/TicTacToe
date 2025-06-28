@@ -1,7 +1,18 @@
 import { GameState, Move } from '@/types/game'
 
-// Connect directly to the GameSession service's SignalR hub
-const SIGNALR_HUB_URL = process.env.NEXT_PUBLIC_SIGNALR_HUB_URL || 'http://localhost:5001/gameHub'
+// Get the service URL from the window object (set by Aspire) or fallback
+const getSignalRHubUrl = () => {
+  if (typeof window !== 'undefined' && (window as any).GAME_SESSION_SERVICE_URL) {
+    const url = `${(window as any).GAME_SESSION_SERVICE_URL}/gameHub`;
+    console.log('SignalR: Using window.GAME_SESSION_SERVICE_URL:', (window as any).GAME_SESSION_SERVICE_URL);
+    console.log('SignalR: Full hub URL:', url);
+    return url;
+  }
+  // Fallback for when not running under Aspire
+  const fallbackUrl = process.env.NEXT_PUBLIC_SIGNALR_HUB_URL || 'http://localhost:8081/gameHub';
+  console.log('SignalR: Using fallback URL:', fallbackUrl);
+  return fallbackUrl;
+};
 
 class SignalRService {
   private connection: import('@microsoft/signalr').HubConnection | null = null
@@ -25,8 +36,11 @@ class SignalRService {
     
     try {
       const signalR = await import('@microsoft/signalr')
+      const hubUrl = getSignalRHubUrl();
+      console.log('Connecting to SignalR hub:', hubUrl);
+      
       this.connection = new signalR.HubConnectionBuilder()
-        .withUrl(SIGNALR_HUB_URL)
+        .withUrl(hubUrl)
         .withAutomaticReconnect()
         .build()
       this.isInitialized = true

@@ -1,7 +1,18 @@
 import { GameSessionClient, TicTacToeGameSessionEndpointsSimulateGameRequest, TicTacToeGameSessionDomainEnumsMoveType } from './generated-client';
 
-// Create a singleton instance of the generated client
-const gameSessionClient = new GameSessionClient();
+// Get the service URL from environment variables (Aspire-injected)
+const getServiceUrl = () => {
+  if (typeof window !== 'undefined') {
+    // Client-side: use the environment variable exposed by Next.js
+    return process.env.NEXT_PUBLIC_GAME_SESSION_SERVICE_URL;
+  } else {
+    // Server-side: use the environment variable directly
+    return process.env.NEXT_PUBLIC_GAME_SESSION_SERVICE_URL;
+  }
+};
+
+// Create a singleton instance of the generated client with the correct service URL
+const gameSessionClient = new GameSessionClient(getServiceUrl());
 
 // Simplified API client that wraps the generated client
 export class ApiClient {
