@@ -321,9 +321,9 @@ jobs:
           dotnet restore ./tests/TicTacToe.GameSession.Tests/TicTacToe.GameSession.Tests.csproj
           dotnet build ./tests/TicTacToe.GameSession.Tests/TicTacToe.GameSession.Tests.csproj --no-restore
 
-          # 5. Run the integration tests. The test code will now make HTTP calls
+          # 5. Run the container integration tests. These tests make actual HTTP calls
           # to http://localhost:8080 and http://localhost:8081, which are mapped to our containers.
-          dotnet test ./tests/TicTacToe.GameSession.Tests/TicTacToe.GameSession.Tests.csproj --no-build --filter "Category=Integration" --logger "trx;LogFileName=integration-test-results.trx" --results-directory ./test-results/
+          dotnet test ./tests/TicTacToe.GameSession.Tests/TicTacToe.GameSession.Tests.csproj --no-build --filter "Category=ContainerIntegration" --logger "trx;LogFileName=integration-test-results.trx" --results-directory ./test-results/
 
       # STEP 15: Run frontend E2E tests
       - name: Run frontend E2E tests
