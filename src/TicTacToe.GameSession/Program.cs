@@ -86,6 +86,9 @@ builder.Services.AddHttpClient<IGameEngineApiClient, GameEngineHttpClient>(clien
     ServerCertificateCustomValidationCallback = (sender, cert, chain, sslPolicyErrors) => true
 });
 
+// Add health checks
+builder.Services.AddHealthChecks();
+
 var app = builder.Build();
 
 // --- Middleware Pipeline ---
