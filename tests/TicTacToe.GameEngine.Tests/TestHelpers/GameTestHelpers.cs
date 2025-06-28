@@ -73,8 +73,7 @@ public static class GameTestHelpers
             // Set the current player to match the move
             if (game.CurrentPlayer != player)
             {
-                // This is a simplified approach - in a real scenario, you might need to handle turn order
-                // For testing purposes, we'll just make the move and let the game handle validation
+                // Simplified approach for testing purposes
             }
             
             game.MakeMove(Position.Create(row, col));

@@ -11,13 +11,10 @@ declare global {
 const getSignalRHubUrl = () => {
   if (typeof window !== 'undefined' && window.GAME_SESSION_SERVICE_URL) {
     const url = `${window.GAME_SESSION_SERVICE_URL}/gameHub`;
-    console.log('SignalR: Using window.GAME_SESSION_SERVICE_URL:', window.GAME_SESSION_SERVICE_URL);
-    console.log('SignalR: Full hub URL:', url);
     return url;
   }
   // Fallback for when not running under Aspire
   const fallbackUrl = process.env.NEXT_PUBLIC_SIGNALR_HUB_URL || 'http://localhost:8081/gameHub';
-  console.log('SignalR: Using fallback URL:', fallbackUrl);
   return fallbackUrl;
 };
 
@@ -44,7 +41,6 @@ class SignalRService {
     try {
       const signalR = await import('@microsoft/signalr')
       const hubUrl = getSignalRHubUrl();
-      console.log('Connecting to SignalR hub:', hubUrl);
       
       this.connection = new signalR.HubConnectionBuilder()
         .withUrl(hubUrl)
@@ -52,7 +48,6 @@ class SignalRService {
         .build()
       this.isInitialized = true
     } catch (error) {
-      console.error('Failed to initialize SignalR:', error)
       throw error
     }
   }
@@ -63,9 +58,7 @@ class SignalRService {
 
     try {
       await this.connection.start()
-      console.log('SignalR Connected')
     } catch (error) {
-      console.error('SignalR Connection Error:', error)
       throw error
     }
   }

@@ -48,8 +48,6 @@ export class ApiService {
   }
 
   static async getSession(sessionId: string): Promise<GameSession> {
-    console.log(`[ApiService] Fetching session: ${sessionId}`)
-    
     const response = await fetch(`/api/sessions/${sessionId}`, {
       method: 'GET',
       headers: {

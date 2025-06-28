@@ -34,7 +34,6 @@ export async function GET(
 ) {
   try {
     const { sessionId } = await params
-    console.log(`[BFF] Getting session: ${sessionId}`)
     
     // Use the new axios-based request utility
     const apiResponse = await serverApiRequest({
@@ -42,12 +41,8 @@ export async function GET(
       url: `/sessions/${sessionId}`,
     })
 
-    console.log(`[BFF] Backend response status: ${apiResponse.status}`)
-    console.log(`[BFF] Backend response data:`, apiResponse.data)
-
     // Check if the response data is valid
     if (!apiResponse.data) {
-      console.error(`[BFF] Empty response data from backend`)
       return NextResponse.json({ error: 'Empty response from backend' }, { status: 500 })
     }
 
@@ -55,13 +50,8 @@ export async function GET(
     return NextResponse.json(apiResponse.data)
 
   } catch (error) {
-    console.error(`[BFF] Error getting session:`, error)
-    
     // Handle errors, including Axios-specific ones
     if (error instanceof AxiosError) {
-      console.error(`[BFF] Axios error status: ${error.response?.status}`)
-      console.error(`[BFF] Axios error data:`, error.response?.data)
-      
       // Handle cases where the session is not found (404)
       if (error.response?.status === 404) {
         return NextResponse.json({ error: 'Session not found' }, { status: 404 })

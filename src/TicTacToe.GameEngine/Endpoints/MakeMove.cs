@@ -37,8 +37,6 @@ public abstract class MakeMoveEndpointBase(IGameRepository repository, ILogger<M
 
     public override async Task HandleAsync(MakeMoveRequest req, CancellationToken ct)
     {
-        Console.WriteLine($"[GameEngine] Received move request for GameId {req.GameId} for position ({req.Row},{req.Column}).");
-        
         logger.LogInformation("Processing move request for game {GameId}: Row={Row}, Column={Column}", req.GameId, req.Row, req.Column);
         
         var game = await repository.GetByIdAsync(req.GameId);
@@ -49,8 +47,6 @@ public abstract class MakeMoveEndpointBase(IGameRepository repository, ILogger<M
             return;
         }
 
-        Console.WriteLine($"[GameEngine] Current game state: Status='{game.Status}', CurrentPlayer='{game.CurrentPlayer}'.");
-        
         logger.LogInformation("Game {GameId} found. Current status: {Status}, Current player: {CurrentPlayer}", 
             req.GameId, game.Status, game.CurrentPlayer);
 

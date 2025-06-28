@@ -23,19 +23,14 @@ public class RandomMoveGenerator : IMoveGenerator
     {
         var availablePositions = GetAvailablePositions(board);
         
-        Console.WriteLine($"[RandomMoveGenerator] Player {player} - Available positions: {string.Join(", ", availablePositions.Select(p => $"({p.Row},{p.Column})"))}");
-        
         if (!availablePositions.Any())
         {
-            Console.WriteLine($"[RandomMoveGenerator] No valid moves available for player {player}");
             throw new InvalidOperationException("No valid moves available on the board.");
         }
         
         // Select a random position from available positions
         var randomIndex = _random.Next(availablePositions.Count);
         var selectedPosition = availablePositions[randomIndex];
-        
-        Console.WriteLine($"[RandomMoveGenerator] Selected position for player {player}: ({selectedPosition.Row}, {selectedPosition.Column})");
         
         return selectedPosition;
     }

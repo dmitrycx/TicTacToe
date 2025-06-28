@@ -307,29 +307,18 @@ public class GameSession
                     gameState.Status == GameStatus.Draw.ToString())
                 {
                     CompleteGame(gameState.Winner);
-                    Console.WriteLine($"[Simulation] Game completed. Winner: {gameState.Winner}");
                     break;
                 }
                 
                 var board = Board.FromStringRepresentation(gameState.Board);
                 
-                // Log the current state before generating a move
-                Console.WriteLine($"[Simulation] Move {moveCount} - Player: {currentPlayer}, Game Status: {gameState.Status}");
-                Console.WriteLine($"[Simulation] Board state from GameEngine: {string.Join("|", gameState.Board.Select(row => string.Join(",", row)))}");
-                
                 // Generate move using the selected strategy
                 var position = moveGenerator.GenerateMove(currentPlayer, board);
-                Console.WriteLine($"[Simulation] Generated move: Row={position.Row}, Column={position.Column} for player {currentPlayer}");
-                
-                // VVVV ADD THIS LOGGING VVVV
-                Console.WriteLine($"[GameSession] Simulating move for Player '{currentPlayer}' at ({position.Row},{position.Column}) for GameId {CurrentGameId}.");
                 
                 // Make move in Game Engine
                 var moveRequest = new MakeMoveRequest(position.Row, position.Column);
-                Console.WriteLine($"[Simulation] Sending move request to GameEngine: GameId={CurrentGameId}, Row={moveRequest.Row}, Column={moveRequest.Column}");
                 
                 gameState = await gameEngineClient.MakeMoveAsync(CurrentGameId, moveRequest);
-                Console.WriteLine($"[Simulation] Move successful. New game status: {gameState.Status}, Winner: {gameState.Winner}");
                 
                 // Record move in session
                 RecordMove(position, currentPlayer);
@@ -342,7 +331,6 @@ public class GameSession
                     gameState.Status == GameStatus.Draw.ToString())
                 {
                     CompleteGame(gameState.Winner);
-                    Console.WriteLine($"[Simulation] Game completed. Winner: {gameState.Winner}");
                     break;
                 }
 

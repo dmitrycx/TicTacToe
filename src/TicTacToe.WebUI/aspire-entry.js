@@ -20,6 +20,5 @@ child.on('error', (error) => {
 });
 
 child.on('exit', (code) => {
-  console.log(`Next.js process exited with code ${code}`);
   process.exit(code);
 }); 
