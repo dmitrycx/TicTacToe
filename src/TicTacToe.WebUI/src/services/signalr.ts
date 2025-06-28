@@ -1,10 +1,17 @@
 import { GameState, Move } from '@/types/game'
 
+// Extend the Window interface to include our custom property
+declare global {
+  interface Window {
+    GAME_SESSION_SERVICE_URL?: string;
+  }
+}
+
 // Get the service URL from the window object (set by Aspire) or fallback
 const getSignalRHubUrl = () => {
-  if (typeof window !== 'undefined' && (window as any).GAME_SESSION_SERVICE_URL) {
-    const url = `${(window as any).GAME_SESSION_SERVICE_URL}/gameHub`;
-    console.log('SignalR: Using window.GAME_SESSION_SERVICE_URL:', (window as any).GAME_SESSION_SERVICE_URL);
+  if (typeof window !== 'undefined' && window.GAME_SESSION_SERVICE_URL) {
+    const url = `${window.GAME_SESSION_SERVICE_URL}/gameHub`;
+    console.log('SignalR: Using window.GAME_SESSION_SERVICE_URL:', window.GAME_SESSION_SERVICE_URL);
     console.log('SignalR: Full hub URL:', url);
     return url;
   }

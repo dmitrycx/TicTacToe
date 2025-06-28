@@ -315,7 +315,7 @@ export default function TicTacToeGame() {
               <div className="p-1.5 sm:p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-large">
                 <Brain className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
               </div>
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-slate-900 via-blue-800 to-indigo-800 bg-clip-text text-transparent">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-slate-900 via-blue-800 to-indigo-800 bg-clip-text text-transparent" data-testid="main-header">
                 Automated Tic Tac Toe
               </h1>
             </div>
@@ -331,13 +331,13 @@ export default function TicTacToeGame() {
               <Card className="p-3 sm:p-4 bg-gradient-to-br from-white/90 to-slate-50/90 backdrop-blur-sm border border-slate-200/50 rounded-xl shadow-soft transition-all duration-300 ease-out hover:shadow-medium h-full flex flex-col">
                 <CardHeader className="pb-2 sm:pb-3">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
-                    <CardTitle className="text-lg sm:text-xl font-bold text-slate-800 flex items-center gap-2">
+                    <CardTitle className="text-lg sm:text-xl font-bold text-slate-800 flex items-center gap-2" data-testid="game-arena-title">
                       <div className="p-1 sm:p-1.5 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-lg">
                         <Target className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
                       </div>
                       Game Arena
                     </CardTitle>
-                    <div className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold tracking-wide transition-all duration-300 ease-out border ${getStatusBadgeStyle()}`}>
+                    <div className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold tracking-wide transition-all duration-300 ease-out border ${getStatusBadgeStyle()}`} data-testid="game-status-badge">
                       {getStatusMessage()}
                     </div>
                   </div>
@@ -348,6 +348,7 @@ export default function TicTacToeGame() {
                     <Label
                       htmlFor="strategy-select"
                       className="text-sm sm:text-base font-semibold text-slate-700 flex items-center gap-2"
+                      data-testid="strategy-label"
                     >
                       <Zap className="w-3 h-3 sm:w-4 sm:h-4 text-amber-500" />
                       Game Strategy
@@ -356,6 +357,7 @@ export default function TicTacToeGame() {
                       value={selectedStrategy}
                       onValueChange={(value: GameStrategy) => setSelectedStrategy(value)}
                       disabled={isSimulating}
+                      data-testid="strategy-select"
                     >
                       <SelectTrigger
                         id="strategy-select"
@@ -392,7 +394,7 @@ export default function TicTacToeGame() {
                   </div>
 
                   {/* Connection Status */}
-                  <div className="flex items-center gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg bg-white/60 backdrop-blur-sm border border-slate-200/50 shadow-soft">
+                  <div className="flex items-center gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg bg-white/60 backdrop-blur-sm border border-slate-200/50 shadow-soft" data-testid="connection-status">
                     <div
                       className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full transition-all duration-300 ${
                         isConnected
@@ -415,6 +417,7 @@ export default function TicTacToeGame() {
                     <Alert
                       variant="destructive"
                       className="bg-red-50/80 backdrop-blur-sm border-red-200/50 animate-slide-down"
+                      data-testid="error-alert"
                     >
                       <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5" />
                       <AlertDescription className="font-medium text-sm sm:text-base">{error}</AlertDescription>
@@ -424,8 +427,10 @@ export default function TicTacToeGame() {
                   {/* Game Board */}
                   <div className="flex justify-center flex-1 items-center">
                     <div className="p-2 sm:p-4 bg-gradient-to-br from-white/90 to-slate-50/90 backdrop-blur-sm rounded-2xl shadow-large border border-slate-200/50">
-                      <div className="grid grid-cols-3 gap-0.5 sm:gap-1">
-                        {Array.from({ length: 9 }, (_, index) => renderSquare(index))}
+                      <div className="grid grid-cols-3 gap-0.5 sm:gap-1" data-testid="game-board">
+                        {Array.from({ length: 9 }, (_, index) => (
+                          <div key={index} data-testid={`board-cell-${index}`}>{renderSquare(index)}</div>
+                        ))}
                       </div>
                     </div>
                   </div>
@@ -442,10 +447,11 @@ export default function TicTacToeGame() {
                hover:brightness-110 hover:-translate-y-0.5
                active:scale-95 active:brightness-90
                disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:brightness-100"
+                      data-testid="start-battle-btn"
                     >
                       {isSimulating ? (
                         <>
-                          <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 sm:mr-2 animate-spin" />
+                          <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 sm:mr-2 animate-spin" data-testid="loading-indicator" />
                           Simulating...
                         </>
                       ) : (

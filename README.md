@@ -15,6 +15,7 @@ This project showcases a distributed system where two AI players compete in Tic 
 - **Backend for Frontend (BFF)** pattern for secure API access
 - **Container-first development** with comprehensive CI/CD
 - **Comprehensive testing** strategy with unit and integration tests
+- **Modern orchestration** with .NET Aspire for seamless development and deployment
 
 ## 🏗️ Architecture
 
@@ -56,8 +57,8 @@ graph TB
 
 | Service | Technology | Port | Responsibility |
 |---------|------------|------|----------------|
-| **GameEngine** | .NET 9 + FastEndpoints | 5185 | Core game logic, board state, move validation |
-| **GameSession** | .NET 9 + FastEndpoints + SignalR | 5001 | Session management, AI move orchestration |
+| **GameEngine** | .NET 9 + FastEndpoints | 8080 | Core game logic, board state, move validation |
+| **GameSession** | .NET 9 + FastEndpoints + SignalR | 8081 | Session management, AI move orchestration |
 | **WebUI** | Next.js 15 + React + TypeScript | 3000 | User interface with real-time updates |
 
 ## 🔄 System Interactions
@@ -173,17 +174,75 @@ graph LR
    cd TicTacToe
    ```
 
-2. **Start Backend Services**
+2. **Start with .NET Aspire (Recommended)**
    ```bash
-   # Option A: Using .NET Aspire (Recommended)
+   # Start all services (backend + frontend) with hot reload
    dotnet run --project aspire/TicTacToe.AppHost
+   ```
    
-   # Option B: Individual services
+   This will start:
+   - **GameEngine** service (.NET project with hot reload)
+   - **GameSession** service (.NET project with hot reload)  
+   - **Next.js UI** (dev server with hot reload)
+   - **Aspire Dashboard** (monitoring and orchestration)
+
+3. **Access the Application**
+   - **Next.js UI**: Available at the URL shown in Aspire dashboard
+   - **Aspire Dashboard**: https://localhost:17122
+   - **GameSession API**: Injected automatically via Aspire
+   - **GameEngine API**: Injected automatically via Aspire
+
+## 🐳 Container Development
+
+### Building Docker Images
+
+```bash
+# Build all service images
+docker build -f GameEngine.Dockerfile -t tictactoe-gameengine:local-test .
+docker build -f GameSession.Dockerfile -t tictactoe-gamesession:local-test .
+docker build -f WebUI.Dockerfile -t tictactoe-webui:local-test .
+```
+
+### Aspire Development Modes
+
+The project supports multiple development modes through .NET Aspire:
+
+| Mode | Command | Backend | Frontend | Use Case |
+|------|---------|---------|----------|----------|
+| **Default** | `dotnet run --project aspire/TicTacToe.AppHost` | .NET projects | Next.js dev | Daily development, hot reload |
+| **Dockerfiles** | `dotnet run --project aspire/TicTacToe.AppHost -- --use-dockerfiles` | Dockerfiles | Next.js dev | Test backend containers, fast UI |
+| **Containers** | `dotnet run --project aspire/TicTacToe.AppHost -- --use-containers` | Container images | Container image | Production simulation |
+
+### Container Mode Details
+
+**Default Mode (Recommended for Development):**
+- Fastest development experience
+- Hot reload for both backend and frontend
+- Automatic service discovery via Aspire
+- Perfect for daily development and feature work
+
+**Dockerfile Mode:**
+- Test backend containerization
+- Keep frontend hot reload for fast iteration
+- Good for testing backend changes in containers
+
+**Container Mode:**
+- Full production simulation
+- All services run as containers
+- Useful for final testing before deployment
+
+## 🔧 Manual Service Setup (Legacy)
+
+If you prefer to run services individually:
+
+1. **Start Backend Services**
+   ```bash
+   # Option A: Individual services
    dotnet run --project src/TicTacToe.GameEngine
    dotnet run --project src/TicTacToe.GameSession
    ```
 
-3. **Configure Frontend**
+2. **Configure Frontend**
    ```bash
    cd src/TicTacToe.WebUI
    npm install
@@ -193,213 +252,111 @@ graph LR
    # Update NEXT_PUBLIC_SIGNALR_HUB_URL with your GameSession URL
    ```
 
-4. **Start Frontend**
+3. **Start Frontend**
    ```bash
    npm run dev
    ```
 
-5. **Access the Application**
-   - **UI**: http://localhost:3000
-   - **Aspire Dashboard**: http://localhost:17122
-   - **GameSession Swagger**: http://localhost:5001/swagger
-   - **GameEngine Swagger**: http://localhost:5185/swagger
+## 🏗️ Project Structure
+
+```
+TicTacToe/
+├── aspire/                          # .NET Aspire orchestration
+│   ├── TicTacToe.AppHost/          # Main application host
+│   └── TicTacToe.ServiceDefaults/  # Shared service configuration
+├── src/
+│   ├── TicTacToe.GameEngine/       # Core game logic service
+│   ├── TicTacToe.GameSession/      # Session management service
+│   └── TicTacToe.WebUI/            # Next.js frontend application
+├── tests/                          # Comprehensive test suite
+│   ├── TicTacToe.GameEngine.Tests/ # Backend unit & integration tests
+│   ├── TicTacToe.GameSession.Tests/ # Backend unit & integration tests
+│   └── TicTacToe.WebUI/tests/      # Frontend tests (unit, integration, E2E)
+├── GameEngine.Dockerfile           # GameEngine container definition
+├── GameSession.Dockerfile          # GameSession container definition
+├── WebUI.Dockerfile                # Next.js production container
+└── README.md                       # This file
+```
 
 ## 🧪 Testing
 
-The project includes a comprehensive testing strategy with both unit and integration tests:
+The project includes comprehensive testing across all layers:
+
+### Backend Testing
 
 ```bash
-# Run all tests
-dotnet test ./TicTacToe.sln
+# Run all backend tests
+dotnet test
 
-# Unit tests only (fast feedback)
-dotnet test --filter "Category=Unit"
-
-# Integration tests (against live containers)
-dotnet test --filter "Category=Integration"
-
-# With coverage
-dotnet test --collect:"XPlat Code Coverage"
+# Run specific test projects
+dotnet test tests/TicTacToe.GameEngine.Tests/
+dotnet test tests/TicTacToe.GameSession.Tests/
 ```
 
-### Test Structure
-
-```
-tests/
-├── TicTacToe.GameEngine.Tests/
-│   ├── Features/
-│   │   ├── CreateGame/
-│   │   ├── GetGameState/
-│   │   └── MakeMove/
-│   └── TestHelpers/
-└── TicTacToe.GameSession.Tests/
-    ├── Features/
-    │   ├── CreateSession/
-    │   ├── SimulateGame/
-    │   └── SessionManagement/
-    └── TestHelpers/
-```
-
-## 🔄 CI/CD Pipeline
-
-The project features a production-grade CI pipeline with security scanning and container-based testing:
-
-```mermaid
-graph LR
-    subgraph "Pull Request"
-        A[Unit Tests<br/>Fast Feedback]
-    end
-    
-    subgraph "Integration Pipeline"
-        B[Build Docker Images]
-        C[Security Scans<br/>Trivy + TruffleHog]
-        D[Integration Tests<br/>Live Containers]
-    end
-
-    A -->|Pass| B
-    B --> C
-    C --> D
-
-    style A fill:#28a745
-    style B fill:#007bff
-    style C fill:#dc3545
-    style D fill:#28a745
-```
-
-### Pipeline Features
-
-- **Two-Stage Validation**: Fast unit tests → comprehensive integration tests
-- **Security Scanning**: Dependency review, secrets detection, container vulnerability scanning
-- **Container-First**: Tests run against actual Docker images
-- **Artifact Retention**: 7-day retention for debugging and analysis
-
-## 🏛️ Architecture Patterns
-
-### Domain-Driven Design
-
-The backend services follow DDD principles with clear domain boundaries:
-
-```
-src/TicTacToe.GameEngine/
-├── Domain/
-│   ├── Aggregates/     # Game aggregate root
-│   ├── Entities/       # Board entity
-│   ├── ValueObjects/   # Position, GameStatus
-│   └── Exceptions/     # Domain exceptions
-├── Endpoints/          # API endpoints
-└── Persistence/        # Repository pattern
-```
-
-### Backend for Frontend (BFF)
-
-The Next.js server acts as a BFF layer, providing:
-- **Security**: Hides internal service complexity
-- **Optimization**: Tailored APIs for frontend needs
-- **Caching**: Reduces backend load
-- **Error Handling**: Centralized error management
-
-### Event-Driven Communication
-
-SignalR enables real-time updates:
-- **Move Notifications**: Instant board updates
-- **Game State Changes**: Status transitions
-- **Error Broadcasting**: Real-time error feedback
-
-## 🔧 Configuration
-
-### Environment Variables
+### Frontend Testing
 
 ```bash
-# GameSession Service
-GAME_ENGINE_URL=https://localhost:5185
-CORS_ORIGINS=http://localhost:3000
+cd src/TicTacToe.WebUI
 
-# Next.js Frontend
-NEXT_PUBLIC_SIGNALR_HUB_URL=https://localhost:5001/gameHub
+# Install dependencies (if not already done)
+npm install
+
+# Unit tests (Jest + React Testing Library)
+npm test
+
+# Unit tests with coverage
+npm run test:coverage
+
+# E2E tests (Playwright) - Basic UI rendering test
+npm run test:e2e
+
+# E2E tests with UI (interactive mode)
+npm run test:e2e:ui
+
+# E2E tests in headed mode (see browser)
+npm run test:e2e:headed
 ```
 
-### Docker Configuration
+**Note:** The E2E test suite includes a reliable basic rendering test that works without backend dependencies, making it suitable for CI/CD pipelines.
 
-The project supports multiple deployment modes:
+### Testing Strategy
 
-```bash
-# Development (project-based)
-dotnet run --project aspire/TicTacToe.AppHost
+The project uses a **three-tier testing approach**:
 
-# Container mode (pre-built images)
-dotnet run --project aspire/TicTacToe.AppHost --use-containers
+1. **Unit Tests** - Fast, isolated testing of individual components and services
+2. **Integration Tests** - API integration testing with mocked dependencies
+3. **E2E Tests** - Full user journey testing in real browsers
 
-# Dockerfile mode (build from source)
-dotnet run --project aspire/TicTacToe.AppHost --use-dockerfiles
-```
-
-## 📚 API Documentation
-
-Interactive API documentation is available when services are running:
-
-- **GameSession API**: http://localhost:5001/swagger
-- **GameEngine API**: http://localhost:5185/swagger
-- **OpenAPI JSON**: Available at `/swagger/v1/swagger.json`
-
-### Key Endpoints
-
-| Service | Endpoint | Method | Description |
-|---------|----------|--------|-------------|
-| GameSession | `/sessions` | POST | Create new game session |
-| GameSession | `/sessions/{id}/simulate` | POST | Start automated gameplay |
-| GameSession | `/sessions/{id}` | GET | Get session details |
-| GameEngine | `/games/{id}/move` | POST | Make a game move |
-| GameEngine | `/games/{id}` | GET | Get game state |
-
-## 🛡️ Security Features
-
-- **CORS Configuration**: Properly configured for development and production
-- **Input Validation**: Comprehensive validation using FluentValidation
-- **Error Handling**: Secure error responses without information leakage
-- **Container Security**: Vulnerability scanning in CI pipeline
-- **Dependency Scanning**: Automated vulnerability detection
+For detailed frontend testing information, see [`src/TicTacToe.WebUI/TESTING.md`](src/TicTacToe.WebUI/TESTING.md).
 
 ## 🚀 Deployment
 
-### Local Development
+### Production Build
 
 ```bash
-# Full stack with Aspire
-dotnet run --project aspire/TicTacToe.AppHost
-
-# Individual services
-dotnet run --project src/TicTacToe.GameEngine
-dotnet run --project src/TicTacToe.GameSession
-cd src/TicTacToe.WebUI && npm run dev
-```
-
-### Container Deployment
-
-```bash
-# Build images
+# Build production images
 docker build -f GameEngine.Dockerfile -t tictactoe-gameengine:latest .
 docker build -f GameSession.Dockerfile -t tictactoe-gamesession:latest .
-
-# Run with Docker Compose
-docker-compose up -d
+docker build -f WebUI.Dockerfile -t tictactoe-webui:latest .
 ```
 
-## 🔮 Future Enhancements
+### Environment Configuration
 
-- **Database Persistence**: PostgreSQL with Entity Framework Core
-- **Message Broker**: RabbitMQ for asynchronous communication
-- **Authentication**: JWT-based authentication and authorization
-- **Monitoring**: Application Insights and health monitoring
-- **Load Balancing**: Kubernetes deployment with ingress
-- **End-to-End Testing**: Playwright test suite
+The application uses .NET Aspire for environment variable injection and service discovery. In production, ensure:
+
+- **Service URLs** are properly configured
+- **CORS policies** are set for your domain
+- **SignalR** endpoints are accessible
+- **Health checks** are configured
 
 ## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+2. Create a feature branch
+3. Make your changes
+4. Add tests for new functionality
+5. Ensure all tests pass
+6. Submit a pull request
 
 ## 📄 License
 
@@ -407,12 +364,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- **.NET Aspire** for local development orchestration
-- **FastEndpoints** for high-performance API development
-- **Next.js** for the modern React framework
-- **SignalR** for real-time communication
-- **Tailwind CSS** for utility-first styling
-
----
-
-**Built with ❤️ using modern .NET and Next.js technologies**
+- Built with [.NET 9](https://dotnet.microsoft.com/)
+- Frontend powered by [Next.js 15](https://nextjs.org/)
+- Orchestrated by [.NET Aspire](https://dotnet.microsoft.com/aspire)
+- Real-time communication via [SignalR](https://dotnet.microsoft.com/apps/aspnet/signalr)
