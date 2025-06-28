@@ -1,10 +1,10 @@
 # ------------------------------------------------------------------------------
-# .NET CI Workflow
+# .NET + Next.js CI Workflow
 #
 # Purpose:
-#   A secure, optimized CI pipeline for the .NET Tic Tac Toe microservices project.
-#   Follows "build once, test the artifact" principle by building Docker images
-#   and testing the actual containers that will be deployed.
+#   A secure, optimized CI pipeline for the .NET Tic Tac Toe microservices project
+#   with Next.js frontend. Follows "build once, test the artifact" principle by 
+#   building Docker images and testing the actual containers that will be deployed.
 #
 # Security Features:
 #   - Dependency vulnerability scanning using GitHub's dependency-review-action
@@ -15,6 +15,7 @@
 #
 # Performance Features:
 #   - Intelligent NuGet package caching for faster builds
+#   - Node.js dependency caching for frontend builds
 #   - Separated test execution (unit vs integration) for efficiency
 #   - Incremental builds with --no-restore optimization
 #
@@ -26,10 +27,10 @@
 #   - 7-day artifact retention for post-analysis
 #
 # Workflow Jobs:
-#   Job 1 (unit-tests): Fast feedback with unit tests only
+#   Job 1 (unit-tests): Fast feedback with unit tests only (backend + frontend)
 #   Job 2 (build-and-integration-test): Build Docker images, scan them, and test live containers
 # ------------------------------------------------------------------------------
-name: .NET CI
+name: .NET + Next.js CI
 
 on:
   pull_request:
@@ -40,6 +41,8 @@ on:
       - 'aspire/'
       - '.sln'
       - '.csproj'
+      - 'package.json'
+      - 'package-lock.json'
       - '.github/workflows/ci.yml'
       - 'Dockerfile*'
   push:
@@ -50,11 +53,13 @@ on:
       - 'aspire/'
       - '.sln'
       - '.csproj'
+      - 'package.json'
+      - 'package-lock.json'
       - '.github/workflows/ci.yml'
       - 'Dockerfile*'
 
 jobs:
-  # JOB 1: Fast feedback with unit tests only
+  # JOB 1: Fast feedback with unit tests only (backend + frontend)
   unit-tests:
     name: Build & Unit Tests
     runs-on: ubuntu-latest
@@ -77,7 +82,15 @@ jobs:
         with:
           dotnet-version: '9.0.200'
 
-      # STEP 3: Performance optimization - restore NuGet packages from cache
+      # STEP 3: Configure Node.js environment for frontend
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: 'src/TicTacToe.WebUI/package-lock.json'
+
+      # STEP 4: Performance optimization - restore NuGet packages from cache
       - name: Cache NuGet packages
         uses: actions/cache@v4
         with:
@@ -86,29 +99,51 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nuget-
 
-      # STEP 4: Download project dependencies from NuGet
-      - name: Restore dependencies
+      # STEP 5: Download project dependencies from NuGet
+      - name: Restore .NET dependencies
         run: dotnet restore ./TicTacToe.sln
 
-      # STEP 5: Compile the solution in Release configuration
-      - name: Build solution
+      # STEP 6: Install frontend dependencies
+      - name: Install frontend dependencies
+        run: |
+          cd src/TicTacToe.WebUI
+          npm ci
+
+      # STEP 7: Compile the solution in Release configuration
+      - name: Build .NET solution
         run: dotnet build ./TicTacToe.sln --no-restore --configuration Release
       
-      # STEP 6: Run ONLY the unit tests (Domain + Configuration) for fast feedback
-      - name: Run unit tests
+      # STEP 8: Build frontend (type checking and compilation)
+      - name: Build frontend
+        run: |
+          cd src/TicTacToe.WebUI
+          npm run build
+      
+      # STEP 9: Run backend unit tests
+      - name: Run backend unit tests
         run: >
           dotnet test ./TicTacToe.sln --no-build --no-restore --configuration Release
           --filter "Category=Unit" 
           --results-directory ./test-results/
-          --logger "trx;LogFileName=unit-test-results.trx"
+          --logger "trx;LogFileName=backend-unit-test-results.trx"
 
-      # STEP 7: Upload unit test results immediately
-      - name: Upload unit test artifacts
+      # STEP 10: Run frontend unit tests
+      - name: Run frontend unit tests
+        run: |
+          cd src/TicTacToe.WebUI
+          npm test -- --coverage --watchAll=false --passWithNoTests
+        env:
+          CI: true
+
+      # STEP 11: Upload test results
+      - name: Upload test artifacts
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: unit-test-results
-          path: ./test-results/unit-test-results.trx
+          path: |
+            ./test-results/backend-unit-test-results.trx
+            ./src/TicTacToe.WebUI/coverage/
           retention-days: 7
 
   # JOB 2: Build Docker images, scan them, and run integration tests against the live containers
@@ -149,12 +184,20 @@ jobs:
         with:
           dotnet-version: '9.0.200'
 
+      # STEP 5: Setup Node.js for frontend tests
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: 'src/TicTacToe.WebUI/package-lock.json'
+
       # --- Docker Image Build Stage ---
-      # STEP 5: Setup Docker Buildx
+      # STEP 6: Setup Docker Buildx
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # STEP 6: Build GameEngine Docker image
+      # STEP 7: Build GameEngine Docker image
       - name: Build GameEngine Docker image
         uses: docker/build-push-action@v5
         with:
@@ -164,7 +207,7 @@ jobs:
           load: true # Make the image available to the Docker engine on the runner
           push: false # Do not push to a registry
 
-      # STEP 7: Build GameSession Docker image
+      # STEP 8: Build GameSession Docker image
       - name: Build GameSession Docker image
         uses: docker/build-push-action@v5
         with:
@@ -174,8 +217,18 @@ jobs:
           load: true
           push: false
 
+      # STEP 9: Build WebUI Docker image
+      - name: Build WebUI Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./src/TicTacToe.WebUI
+          file: ./WebUI.Dockerfile
+          tags: tictactoe-webui:ci
+          load: true
+          push: false
+
       # --- Security Scan Stage (on the built images) ---
-      # STEP 8: Run Trivy to scan GameEngine image
+      # STEP 10: Run Trivy to scan GameEngine image
       - name: Run Trivy to scan GameEngine image
         uses: aquasecurity/trivy-action@master
         with:
@@ -184,7 +237,7 @@ jobs:
           output: 'trivy-game-engine-results.sarif'
           severity: 'CRITICAL,HIGH'
 
-      # STEP 9: Run Trivy to scan GameSession image
+      # STEP 11: Run Trivy to scan GameSession image
       - name: Run Trivy to scan GameSession image
         uses: aquasecurity/trivy-action@master
         with:
@@ -193,7 +246,16 @@ jobs:
           output: 'trivy-game-session-results.sarif'
           severity: 'CRITICAL,HIGH'
 
-      # STEP 10: Upload Trivy scan results to GitHub Security tab
+      # STEP 12: Run Trivy to scan WebUI image
+      - name: Run Trivy to scan WebUI image
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'tictactoe-webui:ci' # Scan the image artifact
+          format: 'sarif'
+          output: 'trivy-webui-results.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      # STEP 13: Upload Trivy scan results to GitHub Security tab
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
         if: always()
@@ -202,8 +264,8 @@ jobs:
           sarif_file: .
 
       # --- Integration Test Stage (against live containers) ---
-      # STEP 11: Run integration tests against live containers
-      - name: Run integration tests against containers
+      # STEP 14: Run backend integration tests against live containers
+      - name: Run backend integration tests against containers
         run: |
           # 1. Create a docker-compose file to orchestrate our services for the test run.
           # This is the CI equivalent of what your Aspire AppHost does for local dev.
@@ -255,14 +317,27 @@ jobs:
           # to http://localhost:8080 and http://localhost:8081, which are mapped to our containers.
           dotnet test ./tests/TicTacToe.GameSession.Tests/TicTacToe.GameSession.Tests.csproj --no-build --filter "Category=Integration" --logger "trx;LogFileName=integration-test-results.trx" --results-directory ./test-results/
 
-      # STEP 12: Stop containers (cleanup)
+      # STEP 15: Run frontend E2E tests
+      - name: Run frontend E2E tests
+        run: |
+          cd src/TicTacToe.WebUI
+          
+          # Install Playwright browsers
+          npx playwright install --with-deps chromium
+          
+          # Run E2E tests (basic UI rendering test that doesn't require backend)
+          npx playwright test --project=chromium --reporter=list
+        env:
+          CI: true
+
+      # STEP 16: Stop containers (cleanup)
       - name: Stop containers
         if: always() # This step runs even if the tests fail
         run: |
           docker compose -f docker-compose.ci.yml down
 
       # --- Reporting Stage ---
-      # STEP 13: Publish test results to pull request interface
+      # STEP 17: Publish test results to pull request interface
       - name: Publish Test Results
         if: always()
         uses: dorny/test-reporter@v1
@@ -271,7 +346,7 @@ jobs:
           path: ./test-results/integration-test-results.trx
           reporter: dotnet-trx
 
-      # STEP 14: Upload detailed reports and coverage data for analysis
+      # STEP 18: Upload detailed reports and coverage data for analysis
       - name: Upload test & coverage artifacts
         uses: actions/upload-artifact@v4
         if: always()
