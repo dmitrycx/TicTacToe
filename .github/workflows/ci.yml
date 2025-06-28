@@ -173,8 +173,10 @@ jobs:
           # Reduce output size to prevent GitHub Actions step summary limit (1024k)
           fail-on-severity: moderate  # Only fail on moderate+ vulnerabilities
           allow-licenses: MIT,Apache-2.0,ISC,BSD-2-Clause,BSD-3-Clause,Unlicense,CC0-1.0
-          # Skip scorecard to reduce output size
-          skip-comments: true
+          # Disable scorecard to reduce output size
+          show-openssf-scorecard: false
+          # Disable PR comments to reduce output
+          comment-summary-in-pr: false
 
       # STEP 3: Secrets detection - scan for hardcoded secrets and credentials
       - name: Run TruffleHog
