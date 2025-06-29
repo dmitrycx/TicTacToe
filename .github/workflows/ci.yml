@@ -229,7 +229,7 @@ jobs:
       - name: Build WebUI Docker image
         uses: docker/build-push-action@v5
         with:
-          context: ./src/TicTacToe.WebUI
+          context: .
           file: ./WebUI.Dockerfile
           tags: tictactoe-webui:ci
           load: true

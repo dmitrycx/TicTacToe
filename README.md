@@ -28,7 +28,7 @@ graph TB
     end
 
     subgraph "API Gateway / BFF"
-        BFF[Next.js Server<br/>Backend for Frontend]
+        BFF[Next.js Server<br/>Backend for Frontend<br/>+ API Proxy Routes]
     end
 
     subgraph "Microservices Layer"
@@ -41,8 +41,9 @@ graph TB
     end
 
     UI -->|HTTP API Calls| BFF
-    UI -->|WebSocket| SR
-    BFF -->|HTTP| GS
+    UI -->|WebSocket via Proxy| SR
+    BFF -->|HTTP Proxy| GS
+    BFF -->|HTTP Proxy| GE
     GS -->|HTTP| GE
     GS -->|Events| SR
 
@@ -95,26 +96,30 @@ sequenceDiagram
     participant GS as GameSession Service
     participant SR as SignalR Hub
     
-    UI->>BFF: GET /api/sessions
-    BFF->>GS: GET /sessions
+    UI->>BFF: GET /api/game/sessions
+    BFF->>GS: GET /sessions (proxied)
     GS-->>BFF: Sessions list
     BFF-->>UI: Sessions data
     
-    UI->>SR: Connect to /gameHub
-    SR-->>UI: Connection established
+    UI->>BFF: Connect to /api/game/gameHub (proxied)
+    BFF->>SR: WebSocket connection
+    SR-->>BFF: Connection established
+    BFF-->>UI: Connection established
     
-    UI->>BFF: POST /api/sessions/{id}/simulate
-    BFF->>GS: POST /sessions/{id}/simulate
+    UI->>BFF: POST /api/game/sessions/{id}/simulate
+    BFF->>GS: POST /sessions/{id}/simulate (proxied)
     GS->>GS: Start simulation
     
     loop During simulation
         GS->>SR: Broadcast move update
-        SR->>UI: Real-time move notification
+        SR->>BFF: Real-time move notification
+        BFF->>UI: Move notification (proxied)
         UI->>UI: Update board display
     end
     
     GS->>SR: Broadcast game completion
-    SR->>UI: Game end notification
+    SR->>BFF: Game end notification
+    BFF->>UI: Game end notification (proxied)
 ```
 
 ### Data Flow Architecture
@@ -192,6 +197,26 @@ graph LR
    - **GameSession API**: Injected automatically via Aspire
    - **GameEngine API**: Injected automatically via Aspire
 
+## 🔧 Recent Improvements
+
+### API Proxy Architecture (Latest)
+- **Unified API endpoints** via Next.js proxy routes (`/api/game/*`)
+- **SignalR WebSocket proxy** for real-time communication in containers
+- **CORS-free container development** with seamless service communication
+- **Automatic environment detection** for local vs container modes
+
+### Frontend Enhancements
+- **TypeScript improvements** with proper type safety for API responses
+- **Enhanced error handling** for WebSocket connections
+- **Real-time game state updates** with proper data mapping
+- **Responsive UI** with modern React patterns
+
+### Backend Improvements
+- **Enhanced session response structure** with game tracking
+- **Improved error handling** and logging
+- **Better service discovery** in containerized environments
+- **Optimized SignalR hub** for real-time updates
+
 ## 🐳 Container Development
 
 ### Building Docker Images
@@ -205,15 +230,14 @@ docker build -f WebUI.Dockerfile -t tictactoe-webui:local-test .
 
 ### Aspire Development Modes
 
-The project supports multiple development modes through .NET Aspire:
+The project supports two development modes through .NET Aspire:
 
 | Mode | Command | Backend | Frontend | Use Case |
 |------|---------|---------|----------|----------|
 | **Default** | `dotnet run --project aspire/TicTacToe.AppHost` | .NET projects | Next.js dev | Daily development, hot reload |
-| **Dockerfiles** | `dotnet run --project aspire/TicTacToe.AppHost -- --use-dockerfiles` | Dockerfiles | Next.js dev | Test backend containers, fast UI |
 | **Containers** | `dotnet run --project aspire/TicTacToe.AppHost -- --use-containers` | Container images | Container image | Production simulation |
 
-### Container Mode Details
+### Development Mode Details
 
 **Default Mode (Recommended for Development):**
 - Fastest development experience
@@ -221,19 +245,33 @@ The project supports multiple development modes through .NET Aspire:
 - Automatic service discovery via Aspire
 - Perfect for daily development and feature work
 
-**Dockerfile Mode:**
-- Test backend containerization
-- Keep frontend hot reload for fast iteration
-- Good for testing backend changes in containers
-
 **Container Mode:**
 - Full production simulation
 - All services run as containers
+- Uses Next.js API proxy routes for backend communication
 - Useful for final testing before deployment
+
+### API Proxy Architecture
+
+In **Container Mode**, the Next.js frontend uses API proxy routes to communicate with backend services:
+
+```
+Frontend (Next.js) → API Routes (/api/game/*) → Backend Services
+```
+
+This architecture:
+- **Eliminates CORS issues** in containerized environments
+- **Provides unified API endpoints** regardless of deployment mode
+- **Enables seamless switching** between development and container modes
+- **Maintains security** by proxying requests through the frontend server
+
+**Key Proxy Routes:**
+- `/api/game/sessions/*` - Session management endpoints
+- `/api/game/gameHub` - SignalR WebSocket proxy for real-time updates
 
 ## 🔧 Manual Service Setup (Legacy)
 
-If you prefer to run services individually:
+If you prefer to run services individually (not recommended):
 
 1. **Start Backend Services**
    ```bash
@@ -246,16 +284,14 @@ If you prefer to run services individually:
    ```bash
    cd src/TicTacToe.WebUI
    npm install
-   
-   # Create environment file
-   cp .env.example .env.local
-   # Update NEXT_PUBLIC_SIGNALR_HUB_URL with your GameSession URL
    ```
 
 3. **Start Frontend**
    ```bash
    npm run dev
    ```
+
+**Note:** Manual setup requires additional configuration for service discovery and may not work with all features. Use .NET Aspire for the best development experience.
 
 ## 🏗️ Project Structure
 
@@ -268,6 +304,10 @@ TicTacToe/
 │   ├── TicTacToe.GameEngine/       # Core game logic service
 │   ├── TicTacToe.GameSession/      # Session management service
 │   └── TicTacToe.WebUI/            # Next.js frontend application
+│       ├── src/app/api/game/       # API proxy routes for backend communication
+│       │   ├── [...path]/          # Dynamic API route for session endpoints
+│       │   └── gameHub/            # SignalR WebSocket proxy
+│       └── src/services/           # Frontend service layer
 ├── tests/                          # Comprehensive test suite
 │   ├── TicTacToe.GameEngine.Tests/ # Backend unit & integration tests
 │   ├── TicTacToe.GameSession.Tests/ # Backend unit & integration tests
@@ -346,6 +386,43 @@ The application uses .NET Aspire for environment variable injection and service 
 - **CORS policies** are set for your domain
 - **SignalR** endpoints are accessible
 - **Health checks** are configured
+
+## 🔧 Troubleshooting
+
+### Common Issues
+
+**WebSocket Connection Errors in Local Mode:**
+- This is normal during development - SignalR tries WebSocket first, then falls back to Server-Sent Events (SSE)
+- The application continues to work perfectly with SSE transport
+- These errors don't appear in container mode due to proper proxy configuration
+- In production, ensure proper WebSocket proxy configuration
+
+**API 404 Errors:**
+- Ensure you're using the correct proxy routes (`/api/game/*`)
+- Check that containers are built with the latest code
+- Verify Aspire is running the correct mode (local vs containers)
+
+**TypeScript Build Errors:**
+- Run `npm install` in the WebUI directory
+- Clear Next.js cache: `rm -rf .next`
+- Ensure all dependencies are up to date
+
+**Container Build Failures:**
+- Ensure Docker is running
+- Check that all Dockerfiles are in the correct locations
+- Verify the build context matches the Dockerfile expectations
+
+**SignalR Connection Issues:**
+- In local mode: Check browser console for connection details
+- In container mode: Ensure the proxy routes are working
+- Verify the GameSession service is healthy
+
+### Getting Help
+
+1. **Check the logs** in Aspire dashboard for detailed error information
+2. **Verify service health** using the health check endpoints
+3. **Test API endpoints** directly using the provided HTTP files
+4. **Review the test suite** for examples of proper API usage
 
 ## 🤝 Contributing
 

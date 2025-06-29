@@ -36,7 +36,6 @@ function getGameSessionUrl(): string {
   }
 
   // Strategy 4: Local development fallback - use the port from Aspire environment
-  // From the logs, we can see the service is running on port 5001 in local mode
   const localUrl = 'http://localhost:5001';
   console.log(`[Proxy] Using local development fallback: ${localUrl}`);
   return localUrl;
