@@ -1,5 +1,4 @@
 using FastEndpoints;
-using Microsoft.Extensions.Logging;
 using TicTacToe.Shared.Enums;
 
 namespace TicTacToe.GameSession.Endpoints;

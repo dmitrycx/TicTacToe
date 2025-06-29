@@ -2,7 +2,6 @@ using FastEndpoints;
 using TicTacToe.GameEngine.Domain.Exceptions;
 using TicTacToe.GameEngine.Domain.ValueObjects;
 using TicTacToe.GameEngine.Persistence;
-using Microsoft.Extensions.Logging;
 
 namespace TicTacToe.GameEngine.Endpoints;
 

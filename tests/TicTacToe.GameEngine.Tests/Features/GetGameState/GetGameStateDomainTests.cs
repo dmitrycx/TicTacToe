@@ -5,7 +5,6 @@ using TicTacToe.GameEngine.Domain.Aggregates;
 using TicTacToe.GameEngine.Domain.Enums;
 using TicTacToe.GameEngine.Persistence;
 using TicTacToe.GameEngine.Tests.TestHelpers;
-using TicTacToe.GameEngine.Domain.Entities;
 using TicTacToe.Shared.Enums;
 
 namespace TicTacToe.GameEngine.Tests.Features.GetGameState;

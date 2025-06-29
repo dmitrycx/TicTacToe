@@ -11,15 +11,10 @@ public class DeleteSessionRequest
 }
 
 /// <summary>
-/// Response DTO for deleting a session.
-/// </summary>
-public record DeleteSessionResponse(bool Success, string Message);
-
-/// <summary>
 /// Endpoint for deleting a session.
 /// </summary>
 public abstract class DeleteSessionEndpointBase(IGameSessionRepository repository)
-    : Endpoint<DeleteSessionRequest, DeleteSessionResponse>
+    : Endpoint<DeleteSessionRequest>
 {
     public override void Configure()
     {
@@ -28,7 +23,7 @@ public abstract class DeleteSessionEndpointBase(IGameSessionRepository repositor
         Summary(s =>
         {
             s.Summary = "Deletes a session by ID.";
-            s.Response<DeleteSessionResponse>(200, "Session successfully deleted.");
+            s.Response(204, "Session successfully deleted.");
             s.Response(404, "Session not found.");
         });
     }
@@ -43,8 +38,7 @@ public abstract class DeleteSessionEndpointBase(IGameSessionRepository repositor
             return;
         }
 
-        var response = new DeleteSessionResponse(true, $"Session {req.SessionId} successfully deleted.");
-        await SendAsync(response, 200, ct);
+        await SendNoContentAsync(ct);
     }
 }
 

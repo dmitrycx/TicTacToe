@@ -3,7 +3,6 @@ using FastEndpoints;
 using FastEndpoints.Swagger; // Use the native swagger generator
 using TicTacToe.GameSession.Hubs;
 using TicTacToe.GameSession.Services;
-using TicTacToe.GameSession.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 

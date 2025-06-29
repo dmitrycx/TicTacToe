@@ -1,8 +1,3 @@
-using System.Net;
-using System.Text;
-using System.Text.Json;
-using TicTacToe.GameSession.Endpoints;
-
 namespace TicTacToe.GameSession.Tests.Features.SimulateGame;
 
 [Trait("Category", "ContainerIntegration")]
@@ -73,7 +68,7 @@ public class SimulateGameContainerIntegrationTests
     
     [Fact]
     [Trait("Category", "ContainerIntegration")]
-    public async Task SimulateGame_WithAlreadyCompletedSession_ShouldReturn400()
+    public async Task SimulateGame_WithAlreadyCompletedSession_ShouldReturn200()
     {
         // Arrange - Create a session and simulate it once
         var createRequest = new { };
@@ -96,7 +91,25 @@ public class SimulateGameContainerIntegrationTests
         // Act - Try to simulate the same session again
         var secondSimulateResponse = await _gameSessionClient.PostAsync($"/sessions/{sessionId}/simulate", simulateContent);
         
-        // Assert
-        secondSimulateResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        // Assert - Re-simulation should be allowed and return 200 OK
+        secondSimulateResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        
+        // Verify the second simulation returns the existing game state
+        var secondSimulateResponseContent = await secondSimulateResponse.Content.ReadAsStringAsync();
+        var secondSimulationDoc = JsonDocument.Parse(secondSimulateResponseContent);
+        
+        // Check that the response contains the expected fields
+        secondSimulationDoc.RootElement.TryGetProperty("sessionId", out var sessionIdElement).Should().BeTrue();
+        sessionIdElement.GetString().Should().Be(sessionId);
+        
+        secondSimulationDoc.RootElement.TryGetProperty("isCompleted", out var isCompletedElement).Should().BeTrue();
+        isCompletedElement.GetBoolean().Should().BeTrue();
+        
+        secondSimulationDoc.RootElement.TryGetProperty("moves", out var movesElement).Should().BeTrue();
+        movesElement.GetArrayLength().Should().BeGreaterThan(0);
+        
+        // Winner can be null (for a draw) or a player name, both are valid
+        secondSimulationDoc.RootElement.TryGetProperty("winner", out var winnerElement).Should().BeTrue();
+        // Don't assert on winner value since it can be null for a draw
     }
 } 

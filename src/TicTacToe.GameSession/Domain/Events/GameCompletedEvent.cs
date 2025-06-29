@@ -1,4 +1,3 @@
-using TicTacToe.GameSession.Domain.Events;
 using TicTacToe.Shared.Enums;
 
 namespace TicTacToe.GameSession.Domain.Events;

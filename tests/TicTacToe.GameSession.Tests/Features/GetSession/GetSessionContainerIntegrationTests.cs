@@ -1,8 +1,3 @@
-using System.Net;
-using System.Text;
-using System.Text.Json;
-using TicTacToe.GameSession.Endpoints;
-
 namespace TicTacToe.GameSession.Tests.Features.GetSession;
 
 [Trait("Category", "ContainerIntegration")]

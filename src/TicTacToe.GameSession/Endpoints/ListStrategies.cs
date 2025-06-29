@@ -1,6 +1,5 @@
 using FastEndpoints;
 using TicTacToe.Shared.Enums;
-using TicTacToe.GameSession.Domain.Services;
 
 namespace TicTacToe.GameSession.Endpoints;
 

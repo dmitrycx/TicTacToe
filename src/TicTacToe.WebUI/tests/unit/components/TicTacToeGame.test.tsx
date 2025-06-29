@@ -1,4 +1,4 @@
-import { render, screen, waitFor, act } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import TicTacToeGame from '@/components/TicTacToeGame'
 import { ApiService } from '@/services/api'
@@ -65,15 +65,13 @@ describe('TicTacToeGame', () => {
       winner: 'X',
       moves: [
         { player: 'X', position: 0, timestamp: '2024-01-01T00:00:00Z', gameId: 'test-game-id' },
-        { player: 'O', position: 4, timestamp: '2024-01-01T00:00:01Z', gameId: 'test-game-id' },
+        { player: 'O', position: 4, timestamp: '2024-01-01T00:01:00Z', gameId: 'test-game-id' },
       ]
     })
   })
 
   it('renders the main header', async () => {
-    await act(async () => {
-      render(<TicTacToeGame />)
-    })
+    render(<TicTacToeGame />)
     
     await waitFor(() => {
       expect(screen.getByTestId('main-header')).toBeInTheDocument()
@@ -81,9 +79,7 @@ describe('TicTacToeGame', () => {
   })
 
   it('renders the game arena title', async () => {
-    await act(async () => {
-      render(<TicTacToeGame />)
-    })
+    render(<TicTacToeGame />)
     
     await waitFor(() => {
       expect(screen.getByTestId('game-arena-title')).toBeInTheDocument()
@@ -91,9 +87,7 @@ describe('TicTacToeGame', () => {
   })
 
   it('renders the game board', async () => {
-    await act(async () => {
-      render(<TicTacToeGame />)
-    })
+    render(<TicTacToeGame />)
     
     await waitFor(() => {
       expect(screen.getByTestId('game-board')).toBeInTheDocument()
@@ -101,9 +95,7 @@ describe('TicTacToeGame', () => {
   })
 
   it('renders the start battle button', async () => {
-    await act(async () => {
-      render(<TicTacToeGame />)
-    })
+    render(<TicTacToeGame />)
     
     await waitFor(() => {
       expect(screen.getByTestId('start-battle-btn')).toBeInTheDocument()
@@ -111,9 +103,7 @@ describe('TicTacToeGame', () => {
   })
 
   it('renders the game status badge', async () => {
-    await act(async () => {
-      render(<TicTacToeGame />)
-    })
+    render(<TicTacToeGame />)
     
     await waitFor(() => {
       expect(screen.getByTestId('game-status-badge')).toBeInTheDocument()
@@ -121,9 +111,7 @@ describe('TicTacToeGame', () => {
   })
 
   it('renders the connection status', async () => {
-    await act(async () => {
-      render(<TicTacToeGame />)
-    })
+    render(<TicTacToeGame />)
     
     await waitFor(() => {
       expect(screen.getByTestId('connection-status')).toBeInTheDocument()
@@ -131,9 +119,7 @@ describe('TicTacToeGame', () => {
   })
 
   it('loads strategies on mount', async () => {
-    await act(async () => {
-      render(<TicTacToeGame />)
-    })
+    render(<TicTacToeGame />)
     
     await waitFor(() => {
       expect(mockApiService.getStrategies).toHaveBeenCalledTimes(1)
@@ -143,17 +129,13 @@ describe('TicTacToeGame', () => {
   it('creates a session when start battle is clicked', async () => {
     const user = userEvent.setup()
     
-    await act(async () => {
-      render(<TicTacToeGame />)
-    })
+    render(<TicTacToeGame />)
     
     await waitFor(() => {
       expect(screen.getByTestId('start-battle-btn')).toBeInTheDocument()
     })
     
-    await act(async () => {
-      await user.click(screen.getByTestId('start-battle-btn'))
-    })
+    await user.click(screen.getByTestId('start-battle-btn'))
     
     await waitFor(() => {
       expect(mockApiService.createSession).toHaveBeenCalledTimes(1)
@@ -164,17 +146,13 @@ describe('TicTacToeGame', () => {
     const user = userEvent.setup()
     mockApiService.createSession.mockRejectedValue(new Error('Failed to create session'))
     
-    await act(async () => {
-      render(<TicTacToeGame />)
-    })
+    render(<TicTacToeGame />)
     
     await waitFor(() => {
       expect(screen.getByTestId('start-battle-btn')).toBeInTheDocument()
     })
     
-    await act(async () => {
-      await user.click(screen.getByTestId('start-battle-btn'))
-    })
+    await user.click(screen.getByTestId('start-battle-btn'))
     
     await waitFor(() => {
       expect(screen.getByTestId('error-alert')).toBeInTheDocument()
@@ -182,9 +160,7 @@ describe('TicTacToeGame', () => {
   })
 
   it('displays strategy selection dropdown', async () => {
-    await act(async () => {
-      render(<TicTacToeGame />)
-    })
+    render(<TicTacToeGame />)
     
     await waitFor(() => {
       expect(screen.getByText('Game Strategy')).toBeInTheDocument()
@@ -192,9 +168,7 @@ describe('TicTacToeGame', () => {
   })
 
   it('renders all 9 game board cells', async () => {
-    await act(async () => {
-      render(<TicTacToeGame />)
-    })
+    render(<TicTacToeGame />)
     
     await waitFor(() => {
       const cells = screen.getAllByTestId(/board-cell-\d+/)
@@ -217,17 +191,13 @@ describe('TicTacToeGame', () => {
       }), 100))
     )
     
-    await act(async () => {
-      render(<TicTacToeGame />)
-    })
+    render(<TicTacToeGame />)
     
     await waitFor(() => {
       expect(screen.getByTestId('start-battle-btn')).toBeInTheDocument()
     })
     
-    await act(async () => {
-      await user.click(screen.getByTestId('start-battle-btn'))
-    })
+    await user.click(screen.getByTestId('start-battle-btn'))
     
     await waitFor(() => {
       expect(screen.getByTestId('loading-indicator')).toBeInTheDocument()

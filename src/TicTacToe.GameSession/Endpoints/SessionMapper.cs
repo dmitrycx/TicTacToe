@@ -1,5 +1,3 @@
-using TicTacToe.Shared.Enums;
-
 namespace TicTacToe.GameSession.Endpoints;
 
 /// <summary>

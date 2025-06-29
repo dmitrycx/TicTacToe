@@ -1,7 +1,6 @@
 using FastEndpoints;
 // DTOs now inlined below
 using TicTacToe.GameSession.Domain.Constants;
-using Microsoft.Extensions.Logging;
 using TicTacToe.GameSession.Services;
 using TicTacToe.Shared.Enums;
 

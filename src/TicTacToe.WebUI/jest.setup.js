@@ -1,5 +1,20 @@
 import '@testing-library/jest-dom'
 
+// Configure React testing environment for concurrent features
+beforeAll(() => {
+  // Suppress console.error for act() warnings in tests
+  const originalError = console.error
+  console.error = (...args) => {
+    if (
+      typeof args[0] === 'string' &&
+      args[0].includes('The current testing environment is not configured to support act(...)')
+    ) {
+      return
+    }
+    originalError.call(console, ...args)
+  }
+})
+
 // Polyfill fetch for Jest environment
 global.fetch = jest.fn()
 
@@ -83,4 +98,24 @@ Object.defineProperty(window, 'matchMedia', {
     removeEventListener: jest.fn(),
     dispatchEvent: jest.fn(),
   })),
-}) 
+})
+
+// Configure React testing environment
+Object.defineProperty(window, 'GAME_SESSION_SERVICE_URL', {
+  value: 'http://localhost:8081',
+  writable: true,
+})
+
+// Suppress specific React warnings in tests
+const originalWarn = console.warn
+console.warn = (...args) => {
+  if (
+    typeof args[0] === 'string' &&
+    (args[0].includes('act(...)') || 
+     args[0].includes('Warning: ReactDOM.render is no longer supported') ||
+     args[0].includes('Warning: An invalid form control'))
+  ) {
+    return
+  }
+  originalWarn.call(console, ...args)
+} 

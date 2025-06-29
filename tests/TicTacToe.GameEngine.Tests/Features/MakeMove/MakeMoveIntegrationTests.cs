@@ -9,7 +9,6 @@ using TicTacToe.GameEngine.Persistence;
 using TicTacToe.GameEngine.Tests.Fixtures;
 using TicTacToe.GameEngine.Tests.TestHelpers;
 using TicTacToe.GameEngine.Domain.Enums;
-using TicTacToe.GameEngine.Domain.Entities;
 
 namespace TicTacToe.GameEngine.Tests.Features.MakeMove;
 
