@@ -331,6 +331,20 @@ dotnet test
 # Run specific test projects
 dotnet test tests/TicTacToe.GameEngine.Tests/
 dotnet test tests/TicTacToe.GameSession.Tests/
+
+# Run only unit tests (fast feedback)
+dotnet test --filter "Category!=Integration&Category!=ContainerIntegration"
+
+# Run only integration tests (in-memory)
+dotnet test --filter "Category=Integration"
+
+# Run container integration tests locally (validates container deployment)
+./test-containers-local.sh
+# or
+npm run test:containers
+
+# Run all tests including containers
+npm run test:all
 ```
 
 ### Frontend Testing

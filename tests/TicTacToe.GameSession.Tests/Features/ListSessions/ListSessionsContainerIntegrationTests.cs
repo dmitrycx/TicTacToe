@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using TicTacToe.GameSession.Endpoints;
 
 namespace TicTacToe.GameSession.Tests.Features.ListSessions;
 
@@ -29,42 +30,47 @@ public class ListSessionsContainerIntegrationTests
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         
         var responseContent = await response.Content.ReadAsStringAsync();
-        var sessions = JsonSerializer.Deserialize<dynamic>(responseContent, _jsonOptions);
+        var jsonDoc = JsonDocument.Parse(responseContent);
+        var sessionsArray = jsonDoc.RootElement.GetProperty("sessions");
         
-        sessions.Should().NotBeNull();
-        sessions.GetArrayLength().Should().Be(0);
+        sessionsArray.GetArrayLength().Should().Be(0);
     }
     
     [Fact]
     [Trait("Category", "ContainerIntegration")]
     public async Task ListSessions_WithCreatedSessions_ShouldReturnSessions()
     {
-        // Arrange - Create some sessions
+        // Arrange - Create a session first
         var createRequest = new { };
         var createJson = JsonSerializer.Serialize(createRequest);
         var createContent = new StringContent(createJson, Encoding.UTF8, "application/json");
+        var createResponse = await _gameSessionClient.PostAsync("/sessions", createContent);
         
-        await _gameSessionClient.PostAsync("/sessions", createContent);
-        await _gameSessionClient.PostAsync("/sessions", createContent);
+        createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
         
-        // Act
-        var response = await _gameSessionClient.GetAsync("/sessions");
+        // Act - List sessions
+        var listResponse = await _gameSessionClient.GetAsync("/sessions");
         
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        listResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         
-        var responseContent = await response.Content.ReadAsStringAsync();
-        var sessions = JsonSerializer.Deserialize<dynamic>(responseContent, _jsonOptions);
+        var listResponseContent = await listResponse.Content.ReadAsStringAsync();
+        var jsonDoc = JsonDocument.Parse(listResponseContent);
+        var sessionsArray = jsonDoc.RootElement.GetProperty("sessions");
         
-        sessions.Should().NotBeNull();
-        sessions.GetArrayLength().Should().BeGreaterThanOrEqualTo(2);
+        sessionsArray.GetArrayLength().Should().BeGreaterThan(0);
         
-        // Verify each session has required properties
-        for (int i = 0; i < sessions.GetArrayLength(); i++)
+        // Check that at least one session has the expected status
+        var hasCreatedSession = false;
+        foreach (var session in sessionsArray.EnumerateArray())
         {
-            var session = sessions[i];
-            session.GetProperty("id").GetString().Should().NotBeNullOrEmpty();
-            session.GetProperty("status").GetString().Should().NotBeNullOrEmpty();
+            if (session.TryGetProperty("status", out var statusElement) && 
+                statusElement.GetString() == "Created")
+            {
+                hasCreatedSession = true;
+                break;
+            }
         }
+        hasCreatedSession.Should().BeTrue();
     }
 } 

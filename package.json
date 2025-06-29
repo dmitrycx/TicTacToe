@@ -1,0 +1,13 @@
+{
+  "name": "tictactoe-microservices",
+  "version": "1.0.0",
+  "description": "Tic Tac Toe Microservices with .NET Aspire",
+  "scripts": {
+    "test:containers": "./test-containers-local.sh",
+    "test:containers:build": "docker build -f GameEngine.Dockerfile -t tictactoe-gameengine:local-test . && docker build -f GameSession.Dockerfile -t tictactoe-gamesession:local-test .",
+    "test:all": "dotnet test && npm run test:containers"
+  },
+  "keywords": ["microservices", "aspire", "dotnet", "nextjs"],
+  "author": "Your Name",
+  "license": "MIT"
+} 

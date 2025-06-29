@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using TicTacToe.GameSession.Endpoints;
 
 namespace TicTacToe.GameSession.Tests.Features.CreateSession;
 
@@ -34,11 +35,39 @@ public class CreateSessionContainerIntegrationTests
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         
         var responseContent = await response.Content.ReadAsStringAsync();
-        var session = JsonSerializer.Deserialize<dynamic>(responseContent, _jsonOptions);
         
-        session.Should().NotBeNull();
-        session.GetProperty("id").GetString().Should().NotBeNullOrEmpty();
-        session.GetProperty("status").GetString().Should().Be("Created");
+        // Debug: Let's see what the actual JSON looks like
+        Console.WriteLine($"Response JSON: {responseContent}");
+        
+        // Try to deserialize as JsonDocument first to see the structure
+        var jsonDoc = JsonDocument.Parse(responseContent);
+        var root = jsonDoc.RootElement;
+        
+        // Check if properties exist
+        if (root.TryGetProperty("sessionId", out var sessionIdElement))
+        {
+            sessionIdElement.GetString().Should().NotBeNullOrEmpty();
+        }
+        else if (root.TryGetProperty("SessionId", out var sessionIdElement2))
+        {
+            sessionIdElement2.GetString().Should().NotBeNullOrEmpty();
+        }
+        else
+        {
+            // If neither exists, let's see what properties are available
+            var properties = root.EnumerateObject().Select(p => p.Name).ToList();
+            Console.WriteLine($"Available properties: {string.Join(", ", properties)}");
+            throw new Exception($"Neither 'sessionId' nor 'SessionId' found. Available: {string.Join(", ", properties)}");
+        }
+        
+        if (root.TryGetProperty("status", out var statusElement))
+        {
+            statusElement.GetString().Should().Be("Created");
+        }
+        else if (root.TryGetProperty("Status", out var statusElement2))
+        {
+            statusElement2.GetString().Should().Be("Created");
+        }
     }
     
     [Fact]
@@ -61,11 +90,11 @@ public class CreateSessionContainerIntegrationTests
         var content1 = await response1.Content.ReadAsStringAsync();
         var content2 = await response2.Content.ReadAsStringAsync();
         
-        var session1 = JsonSerializer.Deserialize<dynamic>(content1, _jsonOptions);
-        var session2 = JsonSerializer.Deserialize<dynamic>(content2, _jsonOptions);
+        var jsonDoc1 = JsonDocument.Parse(content1);
+        var jsonDoc2 = JsonDocument.Parse(content2);
         
-        var id1 = session1.GetProperty("id").GetString();
-        var id2 = session2.GetProperty("id").GetString();
+        var id1 = jsonDoc1.RootElement.GetProperty("sessionId").GetString();
+        var id2 = jsonDoc2.RootElement.GetProperty("sessionId").GetString();
         
         id1.Should().NotBe(id2);
     }

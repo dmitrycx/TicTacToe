@@ -1,6 +1,6 @@
 # TicTacToe WebUI
 
-A modern Next.js frontend for the TicTacToe game with real-time AI simulation capabilities.
+A modern Next.js frontend for the TicTacToe game with real-time AI simulation capabilities, featuring API proxy architecture for seamless microservice communication.
 
 ## 🚀 Quick Start
 
@@ -19,7 +19,10 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 # Unit tests
 npm test
 
-# E2E tests (requires backend services)
+# Unit tests with coverage
+npm run test:coverage
+
+# E2E tests (basic UI rendering test that doesn't require backend)
 npx playwright test --project=chromium
 
 # Run all tests
@@ -33,6 +36,10 @@ npm run test:all
 ```
 src/
 ├── app/                    # Next.js App Router
+│   └── api/               # API proxy routes
+│       └── game/          # Backend service proxies
+│           ├── [...path]/ # Dynamic API route for session endpoints
+│           └── gameHub/   # SignalR WebSocket proxy
 ├── components/            # React components
 │   └── TicTacToeGame.tsx # Main game component
 ├── services/              # API and SignalR services
@@ -45,6 +52,26 @@ tests/
 └── integration/           # Integration tests
 ```
 
+## 🔗 API Proxy Architecture
+
+The WebUI uses **API proxy routes** to communicate with backend services:
+
+```
+Frontend → /api/game/* → Backend Services
+```
+
+### Key Proxy Routes
+
+- **`/api/game/sessions/*`** - Session management endpoints
+- **`/api/game/gameHub`** - SignalR WebSocket proxy for real-time updates
+
+### Benefits
+
+- ✅ **CORS-free development** - No cross-origin issues
+- ✅ **Unified API interface** - Same endpoints in local and container modes
+- ✅ **Automatic environment detection** - Seamless switching between modes
+- ✅ **Security boundary** - Backend services not directly exposed
+
 ## 🧪 Testing Strategy
 
 This project uses a comprehensive testing approach:
@@ -55,12 +82,22 @@ This project uses a comprehensive testing approach:
 
 ## 🔧 Technologies
 
-- **Framework**: Next.js 14 (App Router)
+- **Framework**: Next.js 15 (App Router)
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS
 - **Testing**: Jest, React Testing Library, Playwright
-- **Real-time**: SignalR
+- **Real-time**: SignalR (via proxy)
 - **State Management**: React hooks + Context
+- **API Proxy**: Next.js API routes
+
+## 🐳 Container Mode
+
+When running with containers (via .NET Aspire), the WebUI automatically:
+
+- **Detects container environment** and adjusts API endpoints
+- **Uses proxy routes** for all backend communication
+- **Maintains real-time connections** via SignalR proxy
+- **Provides seamless development experience** regardless of mode
 
 ## 📚 Learn More
 

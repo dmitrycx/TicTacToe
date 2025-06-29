@@ -46,7 +46,7 @@ npm run test:coverage
 # Unit tests in watch mode
 npm run test:watch
 
-# E2E tests
+# E2E tests (basic UI rendering test that doesn't require backend)
 npm run test:e2e
 
 # E2E tests with UI
@@ -116,18 +116,18 @@ import { rest } from 'msw'
 import { setupServer } from 'msw/node'
 
 const server = setupServer(
-  rest.get('/api/sessions', (req, res, ctx) => {
+  rest.get('/api/game/sessions', (req, res, ctx) => {
     return res(
       ctx.json([
-        { id: '1', status: 'Completed' },
-        { id: '2', status: 'InProgress' }
+        { sessionId: '1', status: 'Completed' },
+        { sessionId: '2', status: 'InProgress' }
       ])
     )
   }),
   
-  rest.post('/api/sessions', (req, res, ctx) => {
+  rest.post('/api/game/sessions', (req, res, ctx) => {
     return res(
-      ctx.json({ id: '3', status: 'Created' })
+      ctx.json({ sessionId: '3', status: 'Created' })
     )
   })
 )
@@ -140,7 +140,7 @@ afterAll(() => server.close())
 ### SignalR Mocking
 
 ```tsx
-// Mock SignalR connection
+// Mock SignalR connection (via proxy)
 jest.mock('@/services/signalr', () => ({
   useSignalRConnection: jest.fn(() => ({
     connection: {
@@ -212,6 +212,27 @@ test.describe('Game Flow', () => {
    await page.waitForTimeout(1000)
    ```
 
+## 🔗 API Proxy Testing
+
+### Testing Proxy Routes
+
+Since the WebUI uses API proxy routes (`/api/game/*`), tests should:
+
+1. **Mock the proxy endpoints** rather than the actual backend services
+2. **Test the proxy behavior** in integration tests
+3. **Verify proxy routing** in E2E tests
+
+```tsx
+// Mock proxy endpoint
+rest.get('/api/game/sessions', (req, res, ctx) => {
+  return res(ctx.json([{ sessionId: '1', status: 'Completed' }]))
+})
+
+// Test proxy behavior
+await user.click(screen.getByText('Load Sessions'))
+await expect(screen.getByText('Session 1')).toBeInTheDocument()
+```
+
 ## 📊 Test Coverage
 
 ### Coverage Goals
@@ -276,7 +297,7 @@ await expect(screen.getByText(/error/i)).toBeInTheDocument()
 ### Testing Real-time Updates
 
 ```tsx
-// Mock SignalR events
+// Mock SignalR events (via proxy)
 const mockConnection = {
   on: jest.fn((event, callback) => {
     if (event === 'MoveMade') {
@@ -307,6 +328,7 @@ await waitFor(() => {
 - [ ] Mock external dependencies
 - [ ] Handle async operations properly
 - [ ] Test error scenarios
+- [ ] Use proxy endpoints (`/api/game/*`) in mocks
 
 ### After Writing Tests
 
