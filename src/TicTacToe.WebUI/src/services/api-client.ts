@@ -6,12 +6,21 @@ const getServiceUrl = () => {
 };
 
 // Create a singleton instance of the generated client with the proxy URL
-const gameSessionClient = new GameSessionClient(getServiceUrl());
+// Only create on client side to avoid SSR issues
+const createGameSessionClient = () => {
+  if (typeof window === 'undefined') {
+    // Return a mock client for SSR
+    return null;
+  }
+  return new GameSessionClient(getServiceUrl());
+};
+
+const gameSessionClient = createGameSessionClient();
 
 // Simplified API client that wraps the generated client
 export class ApiClient {
   private static instance: ApiClient;
-  private gameSessionClient: GameSessionClient;
+  private gameSessionClient: GameSessionClient | null;
 
   private constructor() {
     this.gameSessionClient = gameSessionClient;
@@ -44,6 +53,9 @@ export class ApiClient {
 
   async listSessions() {
     try {
+      if (!this.gameSessionClient) {
+        throw new Error('GameSessionClient not available (SSR)');
+      }
       const response = await this.gameSessionClient.ticTacToeGameSessionEndpointsListSessionsEndpoint();
       return response;
     } catch (error) {
@@ -54,6 +66,9 @@ export class ApiClient {
 
   async getSession(sessionId: string) {
     try {
+      if (!this.gameSessionClient) {
+        throw new Error('GameSessionClient not available (SSR)');
+      }
       const response = await this.gameSessionClient.ticTacToeGameSessionEndpointsGetSessionEndpoint(sessionId);
       return response;
     } catch (error) {
@@ -64,6 +79,9 @@ export class ApiClient {
 
   async deleteSession(sessionId: string) {
     try {
+      if (!this.gameSessionClient) {
+        throw new Error('GameSessionClient not available (SSR)');
+      }
       const response = await this.gameSessionClient.ticTacToeGameSessionEndpointsDeleteSessionEndpoint(sessionId);
       return response;
     } catch (error) {
@@ -74,6 +92,9 @@ export class ApiClient {
 
   async simulateGame(sessionId: string, moveStrategy?: string) {
     try {
+      if (!this.gameSessionClient) {
+        throw new Error('GameSessionClient not available (SSR)');
+      }
       const request = new TicTacToeGameSessionEndpointsSimulateGameRequest();
       if (moveStrategy) {
         request.moveStrategy = moveStrategy as TicTacToeGameSessionDomainEnumsMoveType;

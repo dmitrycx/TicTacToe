@@ -14,7 +14,7 @@ export class GameSessionClient {
     protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
 
     constructor(baseUrl?: string, http?: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> }) {
-        this.http = http ? http : window as any;
+        this.http = http ? http : (typeof window !== 'undefined' ? window as any : globalThis as any);
         // Use Aspire-injected service URL or fallback to provided baseUrl or default
         this.baseUrl = baseUrl ?? (typeof window !== 'undefined' 
             ? (window as any).__NEXT_DATA__?.props?.pageProps?.gameSessionServiceUrl 

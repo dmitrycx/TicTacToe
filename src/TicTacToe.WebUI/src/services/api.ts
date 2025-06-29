@@ -39,6 +39,11 @@ interface ExtendedGetSessionResponse {
 
 export class ApiService {
   static async createSession(request: CreateSessionRequest): Promise<CreateSessionResponse> {
+    // Only run on client side
+    if (typeof window === 'undefined') {
+      throw new Error('createSession can only be called on the client side');
+    }
+    
     const response = await apiClient.createSession(request.strategy)
     return {
       sessionId: response.sessionId || '',
@@ -51,6 +56,11 @@ export class ApiService {
   }
 
   static async simulateGame(sessionId: string): Promise<SimulateGameResponse> {
+    // Only run on client side
+    if (typeof window === 'undefined') {
+      throw new Error('simulateGame can only be called on the client side');
+    }
+    
     const response = await apiClient.simulateGame(sessionId)
     return {
       sessionId: response.sessionId || '',
@@ -68,6 +78,11 @@ export class ApiService {
   }
 
   static async getSession(sessionId: string): Promise<GameSession> {
+    // Only run on client side
+    if (typeof window === 'undefined') {
+      throw new Error('getSession can only be called on the client side');
+    }
+    
     const response = await apiClient.getSession(sessionId)
     
     console.log(`[ApiService] Response status: 200`)
@@ -92,6 +107,11 @@ export class ApiService {
   }
 
   static async getStrategies(): Promise<ListStrategiesResponse> {
+    // Only run on client side
+    if (typeof window === 'undefined') {
+      throw new Error('getStrategies can only be called on the client side');
+    }
+    
     // The strategies endpoint is not in our generated client, so we need to fetch it directly
     // but through our proxy
     const response = await fetch('/api/game/sessions/strategies', {

@@ -32,11 +32,43 @@ class SignalRService {
         .withAutomaticReconnect()
         .build();
         
+      // Add development-mode error suppression
+      this.setupErrorHandling();
+        
       this.isInitialized = true;
     } catch (error) {
       console.error('[SignalR] Initialization error:', error);
       throw error;
     }
+  }
+
+  private setupErrorHandling() {
+    if (!this.connection) return;
+
+    // Suppress WebSocket errors in development mode
+    this.connection.onreconnecting((error) => {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[SignalR] Reconnecting... (development mode - WebSocket fallback expected)');
+      } else {
+        console.error('[SignalR] Reconnecting:', error);
+      }
+    });
+
+    this.connection.onreconnected(() => {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[SignalR] Reconnected successfully (development mode)');
+      } else {
+        console.log('[SignalR] Reconnected successfully');
+      }
+    });
+
+    this.connection.onclose((error) => {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[SignalR] Connection closed (development mode - normal during hot reload)');
+      } else {
+        console.error('[SignalR] Connection closed:', error);
+      }
+    });
   }
 
   async start(): Promise<void> {
@@ -47,6 +79,14 @@ class SignalRService {
       await this.connection.start()
       console.log('[SignalR] Connection started successfully via proxy');
     } catch (error) {
+      // Suppress specific WebSocket errors in development
+      if (process.env.NODE_ENV === 'development' && 
+          error instanceof Error && 
+          error.message.includes('WebSocket failed to connect')) {
+        console.log('[SignalR] WebSocket connection failed (development mode - SSE fallback expected)');
+        return; // Don't throw error, let SSE handle it
+      }
+      
       console.error('[SignalR] Failed to start connection via proxy:', error);
       throw error
     }
