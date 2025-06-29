@@ -2,8 +2,12 @@ import {
   CreateSessionRequest, 
   CreateSessionResponse, 
   SimulateGameResponse,
-  GameSession 
+  GameSession,
+  GameStatus,
+  Player,
+  GameStrategy
 } from '@/types/game'
+import { apiClient } from './api-client'
 
 export interface StrategyInfo {
   name: string;
@@ -15,61 +19,82 @@ export interface ListStrategiesResponse {
   strategies: StrategyInfo[];
 }
 
+// Extended interface to include strategy property
+interface ExtendedGetSessionResponse {
+  sessionId?: string;
+  gameId?: string;
+  status?: string;
+  strategy?: GameStrategy;
+  createdAt?: Date;
+  startedAt?: Date | undefined;
+  completedAt?: Date | undefined;
+  moves?: Array<{
+    row?: number;
+    column?: number;
+    player?: string;
+  }>;
+  winner?: string | undefined;
+  result?: string | undefined;
+}
+
 export class ApiService {
   static async createSession(request: CreateSessionRequest): Promise<CreateSessionResponse> {
-    const response = await fetch('/api/sessions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(request),
-    })
-
-    if (!response.ok) {
-      throw new Error(`Failed to create session: ${response.status}`)
+    const response = await apiClient.createSession(request.strategy)
+    return {
+      sessionId: response.sessionId || '',
+      currentGameId: undefined,
+      gameIds: [],
+      status: (response.status as GameStatus) || 'waiting',
+      strategy: request.strategy,
+      moves: []
     }
-
-    return response.json()
   }
 
   static async simulateGame(sessionId: string): Promise<SimulateGameResponse> {
-    const response = await fetch(`/api/sessions/${sessionId}/simulate`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    })
-
-    if (!response.ok) {
-      throw new Error(`Failed to simulate game: ${response.status}`)
+    const response = await apiClient.simulateGame(sessionId)
+    return {
+      sessionId: response.sessionId || '',
+      currentGameId: undefined,
+      gameIds: [],
+      status: response.isCompleted ? 'win' : 'in_progress',
+      winner: response.winner as Player,
+      moves: response.moves?.map((move) => ({
+        player: move.player as Player,
+        position: (move.row || 0) * 3 + (move.column || 0),
+        timestamp: new Date().toISOString(),
+        gameId: response.sessionId
+      })) || []
     }
-
-    return response.json()
   }
 
   static async getSession(sessionId: string): Promise<GameSession> {
-    const response = await fetch(`/api/sessions/${sessionId}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    })
-
-    console.log(`[ApiService] Response status: ${response.status}`)
+    const response = await apiClient.getSession(sessionId)
     
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error(`[ApiService] Error response: ${errorText}`)
-      throw new Error(`Failed to get session: ${response.status} - ${errorText}`)
+    console.log(`[ApiService] Response status: 200`)
+    console.log(`[ApiService] Session data:`, response)
+    
+    // Type assertion to access strategy property that will be available after backend update
+    const responseWithStrategy = response as ExtendedGetSessionResponse
+    
+    return {
+      sessionId: response.sessionId || '',
+      currentGameId: response.gameId,
+      gameIds: response.gameId ? [response.gameId] : [],
+      status: (response.status as GameStatus) || 'waiting',
+      strategy: responseWithStrategy.strategy || 'Random', // Use strategy from backend, fallback to Random
+      moves: response.moves?.map((move) => ({
+        player: move.player as Player,
+        position: (move.row || 0) * 3 + (move.column || 0),
+        timestamp: new Date().toISOString(),
+        gameId: response.gameId
+      })) || []
     }
-
-    const data = await response.json()
-    console.log(`[ApiService] Session data:`, data)
-    return data
   }
 
   static async getStrategies(): Promise<ListStrategiesResponse> {
-    const response = await fetch('/api/sessions/strategies', {
+    // The strategies endpoint is not in our generated client, so we need to fetch it directly
+    // but through our proxy
+    const response = await fetch('/api/game/sessions/strategies', {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

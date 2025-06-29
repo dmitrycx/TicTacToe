@@ -1,5 +1,6 @@
 using FastEndpoints;
 using Microsoft.Extensions.Logging;
+using TicTacToe.Shared.Enums;
 
 namespace TicTacToe.GameSession.Endpoints;
 
@@ -11,6 +12,7 @@ public record GetSessionResponse(
     Guid CurrentGameId,
     List<Guid> GameIds,
     string Status, 
+    GameStrategy Strategy,
     DateTime CreatedAt,
     DateTime? StartedAt,
     DateTime? CompletedAt,
@@ -79,6 +81,7 @@ public abstract class GetSessionEndpointBase(
                     session.CurrentGameId,
                     new List<Guid>(),
                     session.Status.ToString(),
+                    session.Strategy,
                     session.CreatedAt,
                     null,
                     null,

@@ -1,54 +1,41 @@
+// src/lib/signalr.ts
 import { GameState, Move } from '@/types/game'
-
-// Extend the Window interface to include our custom property
-declare global {
-  interface Window {
-    GAME_SESSION_SERVICE_URL?: string;
-  }
-}
-
-// Get the service URL from the window object (set by Aspire) or fallback
-const getSignalRHubUrl = () => {
-  if (typeof window !== 'undefined' && window.GAME_SESSION_SERVICE_URL) {
-    const url = `${window.GAME_SESSION_SERVICE_URL}/gameHub`;
-    return url;
-  }
-  // Fallback for when not running under Aspire
-  const fallbackUrl = process.env.NEXT_PUBLIC_SIGNALR_HUB_URL || 'http://localhost:8081/gameHub';
-  return fallbackUrl;
-};
+import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
 
 class SignalRService {
-  private connection: import('@microsoft/signalr').HubConnection | null = null
-  private isInitialized = false
-  private static instance: SignalRService | null = null
+  private connection: HubConnection | null = null;
+  private isInitialized = false;
+  private static instance: SignalRService | null = null;
 
   private constructor() {}
 
   static getInstance(): SignalRService {
     if (!SignalRService.instance) {
-      SignalRService.instance = new SignalRService()
+      SignalRService.instance = new SignalRService();
     }
-    return SignalRService.instance
+    return SignalRService.instance;
   }
 
-  // Ensures the library is only loaded in the browser
   private async initialize() {
     if (this.isInitialized || typeof window === 'undefined') {
-      return
+      return;
     }
-    
+
     try {
-      const signalR = await import('@microsoft/signalr')
-      const hubUrl = getSignalRHubUrl();
+      // Use the proxy route that handles all environments
+      const hubUrl = '/api/game/gameHub';
+      console.log(`[SignalR] Connecting to proxy: ${hubUrl}`);
       
-      this.connection = new signalR.HubConnectionBuilder()
+      this.connection = new HubConnectionBuilder()
         .withUrl(hubUrl)
+        .configureLogging(LogLevel.Information)
         .withAutomaticReconnect()
-        .build()
-      this.isInitialized = true
+        .build();
+        
+      this.isInitialized = true;
     } catch (error) {
-      throw error
+      console.error('[SignalR] Initialization error:', error);
+      throw error;
     }
   }
 
@@ -58,7 +45,9 @@ class SignalRService {
 
     try {
       await this.connection.start()
+      console.log('[SignalR] Connection started successfully via proxy');
     } catch (error) {
+      console.error('[SignalR] Failed to start connection via proxy:', error);
       throw error
     }
   }
@@ -66,6 +55,8 @@ class SignalRService {
   async stop(): Promise<void> {
     if (this.connection) {
       await this.connection.stop()
+      this.connection = null;
+      this.isInitialized = false;
     }
   }
 
@@ -99,5 +90,4 @@ class SignalRService {
   }
 }
 
-// Export a function to get the singleton instance
-export const getSignalRService = () => SignalRService.getInstance() 
+export const getSignalRService = () => SignalRService.getInstance();

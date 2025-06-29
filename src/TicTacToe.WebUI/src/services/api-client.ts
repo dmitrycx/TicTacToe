@@ -1,17 +1,11 @@
 import { GameSessionClient, TicTacToeGameSessionEndpointsSimulateGameRequest, TicTacToeGameSessionDomainEnumsMoveType } from './generated-client';
 
-// Get the service URL from environment variables (Aspire-injected)
+// Use the proxy route that handles all environments
 const getServiceUrl = () => {
-  if (typeof window !== 'undefined') {
-    // Client-side: use the environment variable exposed by Next.js
-    return process.env.NEXT_PUBLIC_GAME_SESSION_SERVICE_URL;
-  } else {
-    // Server-side: use the environment variable directly
-    return process.env.NEXT_PUBLIC_GAME_SESSION_SERVICE_URL;
-  }
+  return '/api/game';
 };
 
-// Create a singleton instance of the generated client with the correct service URL
+// Create a singleton instance of the generated client with the proxy URL
 const gameSessionClient = new GameSessionClient(getServiceUrl());
 
 // Simplified API client that wraps the generated client
@@ -31,10 +25,17 @@ export class ApiClient {
   }
 
   // Session Management
-  async createSession() {
+  async createSession(strategy: string) {
     try {
-      const response = await this.gameSessionClient.ticTacToeGameSessionEndpointsCreateSessionEndpoint();
-      return response;
+      const response = await fetch('/api/game/sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ strategy })
+      });
+      if (!response.ok) {
+        throw new Error(`Failed to create session: ${response.status}`);
+      }
+      return await response.json();
     } catch (error) {
       console.error('Failed to create session:', error);
       throw error;

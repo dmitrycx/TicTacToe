@@ -1,3 +1,5 @@
+using TicTacToe.Shared.Enums;
+
 namespace TicTacToe.GameSession.Endpoints;
 
 /// <summary>
@@ -22,6 +24,7 @@ public static class SessionMapper
             session.CurrentGameId,
             session.GameIds?.ToList() ?? new List<Guid>(),
             session.Status.ToString(),
+            session.Strategy,
             session.CreatedAt,
             session.StartedAt,
             session.CompletedAt,

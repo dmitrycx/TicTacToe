@@ -43,6 +43,11 @@ public class GameSession
     public SessionStatus Status { get; private set; }
     
     /// <summary>
+    /// Strategy used for this session.
+    /// </summary>
+    public GameStrategy Strategy { get; private set; }
+    
+    /// <summary>
     /// When the session was created.
     /// </summary>
     public DateTime CreatedAt { get; private set; }
@@ -85,6 +90,7 @@ public class GameSession
         var session = new GameSession();
         session.Id = Guid.NewGuid();
         session.Status = SessionStatus.Created;
+        session.Strategy = GameStrategy.Random; // Default strategy
         session.CreatedAt = DateTime.UtcNow;
         
         session._domainEvents.Add(new SessionCreatedEvent(session.Id, Guid.Empty));
@@ -101,9 +107,40 @@ public class GameSession
         _gameIds.Add(gameId);
         CurrentGameId = gameId;
         Status = SessionStatus.Created;
+        Strategy = GameStrategy.Random; // Default strategy
         CreatedAt = DateTime.UtcNow;
         
         _domainEvents.Add(new SessionCreatedEvent(Id, CurrentGameId));
+    }
+
+    /// <summary>
+    /// Creates a new game session with a specific strategy.
+    /// </summary>
+    /// <param name="strategy">The strategy to use for this session.</param>
+    public static GameSession Create(GameStrategy strategy)
+    {
+        var session = new GameSession();
+        session.Id = Guid.NewGuid();
+        session.Status = SessionStatus.Created;
+        session.Strategy = strategy;
+        session.CreatedAt = DateTime.UtcNow;
+        
+        session._domainEvents.Add(new SessionCreatedEvent(session.Id, Guid.Empty));
+        return session;
+    }
+
+    /// <summary>
+    /// Sets the strategy for this session.
+    /// </summary>
+    /// <param name="strategy">The strategy to use.</param>
+    public void SetStrategy(GameStrategy strategy)
+    {
+        if (Status != SessionStatus.Created)
+        {
+            throw new InvalidSessionStateException("Cannot change strategy after session has started");
+        }
+        
+        Strategy = strategy;
     }
 
     /// <summary>
