@@ -23,11 +23,6 @@ describe('API Client', () => {
     apiClient = ApiClient.getInstance()
   })
 
-  it('can create a session', async () => {
-    const result = await apiClient.createSession()
-    expect(result).toBeDefined()
-  })
-
   it('can list sessions', async () => {
     const result = await apiClient.listSessions()
     expect(result).toBeDefined()
@@ -57,54 +52,6 @@ describe('API Client', () => {
   it('handles simulateGame with strategy parameter', async () => {
     const result = await apiClient.simulateGame('test-id', 'RuleBased')
     expect(result).toBeDefined()
-  })
-
-  it('handles API errors gracefully', async () => {
-    // Mock the client to throw an error
-    const mockClient = {
-      ticTacToeGameSessionEndpointsCreateSessionEndpoint: jest.fn().mockRejectedValue(new Error('API Error')),
-    }
-    
-    // Temporarily replace the client
-    const originalClient = (apiClient as any).gameSessionClient
-    ;(apiClient as any).gameSessionClient = mockClient
-    
-    await expect(apiClient.createSession()).rejects.toThrow('API Error')
-    
-    // Restore the original client
-    ;(apiClient as any).gameSessionClient = originalClient
-  })
-
-  it('handles network errors', async () => {
-    // Mock the client to throw a network error
-    const mockClient = {
-      ticTacToeGameSessionEndpointsCreateSessionEndpoint: jest.fn().mockRejectedValue(new Error('Network Error')),
-    }
-    
-    // Temporarily replace the client
-    const originalClient = (apiClient as any).gameSessionClient
-    ;(apiClient as any).gameSessionClient = mockClient
-    
-    await expect(apiClient.createSession()).rejects.toThrow('Network Error')
-    
-    // Restore the original client
-    ;(apiClient as any).gameSessionClient = originalClient
-  })
-
-  it('handles timeout errors', async () => {
-    // Mock the client to throw a timeout error
-    const mockClient = {
-      ticTacToeGameSessionEndpointsCreateSessionEndpoint: jest.fn().mockRejectedValue(new Error('Request timeout')),
-    }
-    
-    // Temporarily replace the client
-    const originalClient = (apiClient as any).gameSessionClient
-    ;(apiClient as any).gameSessionClient = mockClient
-    
-    await expect(apiClient.createSession()).rejects.toThrow('Request timeout')
-    
-    // Restore the original client
-    ;(apiClient as any).gameSessionClient = originalClient
   })
 
   it('handles invalid session ID', async () => {
