@@ -104,9 +104,11 @@ sequenceDiagram
     YARP-->>UI: Sessions data
     
     UI->>YARP: Connect to /api/game/gameHub (WebSocket)
-    YARP->>SR: WebSocket connection
-    SR-->>YARP: Connection established
-    YARP-->>UI: Connection established
+    YARP->>GS: WebSocket proxy to /gamehub
+    GS->>SR: SignalR connection established
+    SR-->>GS: Connection confirmed
+    GS-->>YARP: WebSocket connection established
+    YARP-->>UI: WebSocket connection established
     
     UI->>YARP: POST /api/game/sessions/{id}/simulate
     YARP->>GS: POST /sessions/{id}/simulate (proxied)
@@ -114,14 +116,16 @@ sequenceDiagram
     
     loop During simulation
         GS->>SR: Broadcast move update
-        SR->>YARP: Real-time move notification
-        YARP->>UI: Move notification (WebSocket)
+        SR->>GS: SignalR event
+        GS->>YARP: WebSocket message (proxied)
+        YARP->>UI: Real-time move notification
         UI->>UI: Update board display
     end
     
     GS->>SR: Broadcast game completion
-    SR->>YARP: Game end notification
-    YARP->>UI: Game end notification (WebSocket)
+    SR->>GS: SignalR event
+    GS->>YARP: WebSocket message (proxied)
+    YARP->>UI: Game end notification
 ```
 
 ### Data Flow Architecture
