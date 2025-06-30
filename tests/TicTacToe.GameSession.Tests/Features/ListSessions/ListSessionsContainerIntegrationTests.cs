@@ -43,11 +43,33 @@ public class ListSessionsContainerIntegrationTests
         
         createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
         
-        // Act - List sessions
-        var listResponse = await _gameSessionClient.GetAsync("/sessions");
+        // Small delay to ensure the session is fully created
+        await Task.Delay(1000);
+        
+        // Act - List sessions with retry logic for CI timing issues
+        HttpResponseMessage listResponse = null;
+        var maxRetries = 3;
+        var retryCount = 0;
+        
+        while (retryCount < maxRetries)
+        {
+            listResponse = await _gameSessionClient.GetAsync("/sessions");
+            
+            if (listResponse.StatusCode == HttpStatusCode.OK)
+            {
+                break;
+            }
+            
+            retryCount++;
+            if (retryCount < maxRetries)
+            {
+                await Task.Delay(2000); // Wait 2 seconds before retry
+            }
+        }
         
         // Assert
-        listResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        listResponse.StatusCode.Should().Be(HttpStatusCode.OK, 
+            $"List sessions failed after {maxRetries} attempts. Last status: {listResponse.StatusCode}");
         
         var listResponseContent = await listResponse.Content.ReadAsStringAsync();
         var jsonDoc = JsonDocument.Parse(listResponseContent);

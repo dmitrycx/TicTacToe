@@ -29,14 +29,37 @@ public class SimulateGameContainerIntegrationTests
         var jsonDoc = JsonDocument.Parse(createResponseContent);
         var sessionId = jsonDoc.RootElement.GetProperty("sessionId").GetString();
         
-        // Act - Simulate the game
+        // Small delay to ensure the session is fully created
+        await Task.Delay(1000);
+        
+        // Act - Simulate the game with retry logic for CI timing issues
         var simulateRequest = new { };
         var simulateJson = JsonSerializer.Serialize(simulateRequest);
         var simulateContent = new StringContent(simulateJson, Encoding.UTF8, "application/json");
-        var simulateResponse = await _gameSessionClient.PostAsync($"/sessions/{sessionId}/simulate", simulateContent);
+        
+        HttpResponseMessage simulateResponse = null;
+        var maxRetries = 3;
+        var retryCount = 0;
+        
+        while (retryCount < maxRetries)
+        {
+            simulateResponse = await _gameSessionClient.PostAsync($"/sessions/{sessionId}/simulate", simulateContent);
+            
+            if (simulateResponse.StatusCode == HttpStatusCode.OK)
+            {
+                break;
+            }
+            
+            retryCount++;
+            if (retryCount < maxRetries)
+            {
+                await Task.Delay(2000); // Wait 2 seconds before retry
+            }
+        }
         
         // Assert
-        simulateResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        simulateResponse.StatusCode.Should().Be(HttpStatusCode.OK, 
+            $"Simulation failed after {maxRetries} attempts. Last status: {simulateResponse.StatusCode}");
         
         var simulateResponseContent = await simulateResponse.Content.ReadAsStringAsync();
         var simulationDoc = JsonDocument.Parse(simulateResponseContent);

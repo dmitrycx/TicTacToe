@@ -4,8 +4,10 @@
   "description": "Tic Tac Toe Microservices with .NET Aspire",
   "scripts": {
     "test:containers": "./test-containers-local.sh",
-    "test:containers:build": "docker build -f GameEngine.Dockerfile -t tictactoe-gameengine:local-test . && docker build -f GameSession.Dockerfile -t tictactoe-gamesession:local-test .",
-    "test:all": "dotnet test && npm run test:containers"
+    "test:containers:ci": "./test-containers-ci-local.sh",
+    "test:frontend": "./test-frontend-local.sh",
+    "test:all": "npm run test:containers:ci && npm run test:frontend",
+    "build:containers": "./build-local-containers.sh"
   },
   "keywords": ["microservices", "aspire", "dotnet", "nextjs"],
   "author": "Your Name",

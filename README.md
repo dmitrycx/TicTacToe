@@ -336,6 +336,9 @@ dotnet test --filter "Category!=ContainerIntegration"
 # Test containers locally (full integration)
 ./test-containers-local.sh
 
+# Test containers with CI-like conditions (catches CI timing issues)
+./test-containers-ci-local.sh
+
 # Test everything (backend + frontend + containers)
 npm run test:all
 ```
@@ -360,6 +363,11 @@ dotnet test --filter "Category=Integration"
 ./test-containers-local.sh
 # or
 npm run test:containers
+
+# Run container integration tests with CI-like conditions (catches timing issues)
+./test-containers-ci-local.sh
+# or
+npm run test:containers:ci
 
 # Run all tests including containers
 npm run test:all
@@ -430,9 +438,42 @@ The GitHub Actions pipeline runs:
 **To avoid CI failures:**
 - Run `./test-frontend-local.sh` before pushing frontend changes
 - Run `./test-containers-local.sh` before pushing backend changes
+- Run `./test-containers-ci-local.sh` to catch CI timing issues locally
 - Use `npm run test:ci` to test frontend in CI-like environment
 
-For detailed frontend testing information, see [`src/TicTacToe.WebUI/TESTING.md`](src/TicTacToe.WebUI/TESTING.md).
+### Troubleshooting CI Issues
+
+**Common CI Failures and Local Solutions:**
+
+1. **Container Integration Tests Failing in CI but Passing Locally:**
+   ```bash
+   # Use CI-like testing to catch timing issues
+   ./test-containers-ci-local.sh
+   ```
+   - **Causes:** Different timing in CI environment, service startup delays
+   - **Solution:** Tests now include retry logic and longer waits
+
+2. **500 Internal Server Error in ListSessions:**
+   - **Cause:** Service not fully ready when test runs
+   - **Solution:** Added retry logic with 2-second delays between attempts
+
+3. **404 Not Found in SimulateGame:**
+   - **Cause:** Session creation and simulation happening too quickly
+   - **Solution:** Added 1-second delay after session creation
+
+4. **Frontend Tests Failing in CI:**
+   ```bash
+   # Test frontend in CI-like environment
+   ./test-frontend-local.sh
+   ```
+   - **Causes:** Missing dependencies, different Node.js versions
+   - **Solution:** Script installs dependencies with `npm ci` (matches CI)
+
+**Local Testing Workflow to Prevent CI Failures:**
+```bash
+# Before pushing any changes:
+npm run test:all  # Runs everything in CI-like conditions
+```
 
 ## 🚀 Deployment
 
