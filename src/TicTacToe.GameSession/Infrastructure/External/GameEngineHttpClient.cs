@@ -30,11 +30,22 @@ public class GameEngineHttpClient : IGameEngineApiClient
     /// <returns>The created game response.</returns>
     public async Task<CreateGameResponse> CreateGameAsync()
     {
-        var response = await _httpClient.PostAsync("/games", null);
-        response.EnsureSuccessStatusCode();
-        
-        return await response.Content.ReadFromJsonAsync<CreateGameResponse>(_jsonOptions) 
-               ?? throw new InvalidOperationException("Failed to deserialize create game response");
+        try
+        {
+            var response = await _httpClient.PostAsync("/games", null);
+            response.EnsureSuccessStatusCode();
+            
+            return await response.Content.ReadFromJsonAsync<CreateGameResponse>(_jsonOptions) 
+                   ?? throw new InvalidOperationException("Failed to deserialize create game response");
+        }
+        catch (HttpRequestException ex)
+        {
+            throw new HttpRequestException($"Failed to create game in Game Engine: {ex.Message}", ex);
+        }
+        catch (JsonException ex)
+        {
+            throw new InvalidOperationException($"Failed to deserialize create game response: {ex.Message}", ex);
+        }
     }
 
     /// <summary>
@@ -45,11 +56,22 @@ public class GameEngineHttpClient : IGameEngineApiClient
     /// <returns>The updated game state.</returns>
     public async Task<GameStateResponse> MakeMoveAsync(Guid gameId, MakeMoveRequest request)
     {
-        var response = await _httpClient.PostAsJsonAsync($"/games/{gameId}/move", request, _jsonOptions);
-        response.EnsureSuccessStatusCode();
-        
-        return await response.Content.ReadFromJsonAsync<GameStateResponse>(_jsonOptions) 
-               ?? throw new InvalidOperationException("Failed to deserialize game state response");
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync($"/games/{gameId}/move", request, _jsonOptions);
+            response.EnsureSuccessStatusCode();
+            
+            return await response.Content.ReadFromJsonAsync<GameStateResponse>(_jsonOptions) 
+                   ?? throw new InvalidOperationException("Failed to deserialize game state response");
+        }
+        catch (HttpRequestException ex)
+        {
+            throw new HttpRequestException($"Failed to make move in Game Engine for game {gameId}: {ex.Message}", ex);
+        }
+        catch (JsonException ex)
+        {
+            throw new InvalidOperationException($"Failed to deserialize game state response for game {gameId}: {ex.Message}", ex);
+        }
     }
 
     /// <summary>
@@ -59,10 +81,21 @@ public class GameEngineHttpClient : IGameEngineApiClient
     /// <returns>The current game state.</returns>
     public async Task<GameStateResponse> GetGameStateAsync(Guid gameId)
     {
-        var response = await _httpClient.GetAsync($"/games/{gameId}");
-        response.EnsureSuccessStatusCode();
-        
-        return await response.Content.ReadFromJsonAsync<GameStateResponse>(_jsonOptions) 
-               ?? throw new InvalidOperationException("Failed to deserialize game state response");
+        try
+        {
+            var response = await _httpClient.GetAsync($"/games/{gameId}");
+            response.EnsureSuccessStatusCode();
+            
+            return await response.Content.ReadFromJsonAsync<GameStateResponse>(_jsonOptions) 
+                   ?? throw new InvalidOperationException("Failed to deserialize game state response");
+        }
+        catch (HttpRequestException ex)
+        {
+            throw new HttpRequestException($"Failed to get game state from Game Engine for game {gameId}: {ex.Message}", ex);
+        }
+        catch (JsonException ex)
+        {
+            throw new InvalidOperationException($"Failed to deserialize game state response for game {gameId}: {ex.Message}", ex);
+        }
     }
 } 

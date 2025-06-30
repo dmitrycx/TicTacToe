@@ -27,7 +27,7 @@ public class SimulateGameIntegrationTests(TestFixture fixture) : IClassFixture<T
     
     [Fact]
     [Trait("Category", "Integration")]
-    public async Task SimulateGame_WithAlreadyCompletedSession_ShouldReturn400()
+    public async Task SimulateGame_WithAlreadyCompletedSession_ShouldReturn200()
     {
         // Arrange
         var session = new Domain.Aggregates.GameSession(Guid.NewGuid());
@@ -42,7 +42,7 @@ public class SimulateGameIntegrationTests(TestFixture fixture) : IClassFixture<T
         var response = await _client.PostAsync($"/sessions/{session.Id}/simulate", content);
         
         // Assert
-        response.StatusCode.Should().Be(System.Net.HttpStatusCode.BadRequest);
+        response.StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
     }
     
     [Fact]

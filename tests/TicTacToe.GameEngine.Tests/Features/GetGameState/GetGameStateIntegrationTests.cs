@@ -6,6 +6,7 @@ using System.Text.Json;
 using TicTacToe.GameEngine.Domain.Enums;
 using TicTacToe.GameEngine.Endpoints;
 using TicTacToe.GameEngine.Tests.Fixtures;
+using TicTacToe.Shared.Enums;
 
 namespace TicTacToe.GameEngine.Tests.Features.GetGameState;
 

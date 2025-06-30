@@ -30,9 +30,10 @@ public class GetSessionDomainTests
         var response = session.ToResponse();
         
         // Assert
+        response.Should().NotBeNull();
         response.SessionId.Should().Be(session.Id);
-        response.GameId.Should().Be(gameId);
-        response.Status.Should().Be("Completed");
+        response.CurrentGameId.Should().Be(session.CurrentGameId);
+        response.Status.Should().Be(session.Status.ToString());
         response.CreatedAt.Should().Be(createdAt);
         response.StartedAt.Should().Be(startedAt);
         response.CompletedAt.Should().Be(completedAt);

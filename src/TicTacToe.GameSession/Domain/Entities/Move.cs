@@ -1,5 +1,6 @@
 using TicTacToe.GameEngine.Domain.Enums;
 using TicTacToe.GameEngine.Domain.ValueObjects;
+using TicTacToe.Shared.Enums;
 
 namespace TicTacToe.GameSession.Domain.Entities;
 
@@ -16,7 +17,7 @@ public class Move
     
     public Position Position { get; private set; } = null!;
     
-    public MoveType Type { get; private set; }
+    public GameStrategy Type { get; private set; }
     
     public DateTime MadeAt { get; private set; }
     
@@ -30,7 +31,7 @@ public class Move
     /// <param name="position">The position of the move.</param>
     /// <param name="type">The type of move.</param>
     /// <param name="moveNumber">The move number in sequence.</param>
-    public Move(Guid sessionId, Player player, Position position, MoveType type, int moveNumber)
+    public Move(Guid sessionId, Player player, Position position, GameStrategy type, int moveNumber)
     {
         Id = Guid.NewGuid();
         SessionId = sessionId;

@@ -3,11 +3,12 @@ using FluentAssertions;
 using System.Net;
 using System.Text;
 using System.Text.Json;
-using TicTacToe.GameEngine.Domain.Enums;
+using TicTacToe.Shared.Enums;
 using TicTacToe.GameEngine.Endpoints;
 using TicTacToe.GameEngine.Persistence;
 using TicTacToe.GameEngine.Tests.Fixtures;
 using TicTacToe.GameEngine.Tests.TestHelpers;
+using TicTacToe.GameEngine.Domain.Enums;
 
 namespace TicTacToe.GameEngine.Tests.Features.MakeMove;
 

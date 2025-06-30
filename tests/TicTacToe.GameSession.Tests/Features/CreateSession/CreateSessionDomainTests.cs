@@ -14,11 +14,11 @@ public class CreateSessionDomainTests
         var session = Domain.Aggregates.GameSession.Create();
 
         // Assert
+        session.Id.Should().NotBeEmpty();
+        session.CurrentGameId.Should().Be(Guid.Empty);
         session.Status.Should().Be(SessionStatus.Created);
         session.CreatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(1));
-        session.Id.Should().NotBeEmpty();
         session.Moves.Should().BeEmpty();
-        session.GameId.Should().Be(Guid.Empty); // Default value
         session.Winner.Should().BeNull();
         session.StartedAt.Should().BeNull();
         session.CompletedAt.Should().BeNull();

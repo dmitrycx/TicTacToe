@@ -3,6 +3,7 @@ FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
 # Copy project files first for better layer caching
+COPY ["src/TicTacToe.Shared/TicTacToe.Shared.csproj", "src/TicTacToe.Shared/"]
 COPY ["src/TicTacToe.GameEngine/TicTacToe.GameEngine.csproj", "src/TicTacToe.GameEngine/"]
 COPY ["aspire/TicTacToe.ServiceDefaults/TicTacToe.ServiceDefaults.csproj", "aspire/TicTacToe.ServiceDefaults/"]
 
@@ -10,6 +11,7 @@ COPY ["aspire/TicTacToe.ServiceDefaults/TicTacToe.ServiceDefaults.csproj", "aspi
 RUN dotnet restore "src/TicTacToe.GameEngine/TicTacToe.GameEngine.csproj"
 
 # Copy source code
+COPY ["src/TicTacToe.Shared/", "src/TicTacToe.Shared/"]
 COPY ["src/TicTacToe.GameEngine/", "src/TicTacToe.GameEngine/"]
 COPY ["aspire/TicTacToe.ServiceDefaults/", "aspire/TicTacToe.ServiceDefaults/"]
 

@@ -1,6 +1,7 @@
 using TicTacToe.GameEngine.Domain.Entities;
 using TicTacToe.GameEngine.Domain.Enums;
 using TicTacToe.GameEngine.Domain.ValueObjects;
+using TicTacToe.Shared.Enums;
 
 namespace TicTacToe.GameSession.Domain.Services;
 
@@ -29,13 +30,15 @@ public class RandomMoveGenerator : IMoveGenerator
         
         // Select a random position from available positions
         var randomIndex = _random.Next(availablePositions.Count);
-        return availablePositions[randomIndex];
+        var selectedPosition = availablePositions[randomIndex];
+        
+        return selectedPosition;
     }
 
     /// <summary>
     /// The type of move generation strategy.
     /// </summary>
-    public MoveType Type => MoveType.Random;
+    public GameStrategy Type => GameStrategy.Random;
 
     /// <summary>
     /// Gets all available (empty) positions on the board.
