@@ -1,4 +1,5 @@
 namespace TicTacToe.GameSession.Domain.Services;
+using TicTacToe.Shared.Enums;
 
 /// <summary>
 /// Factory interface for creating move generators.
@@ -10,11 +11,11 @@ public interface IMoveGeneratorFactory
     /// </summary>
     /// <param name="moveType">The type of move generation strategy.</param>
     /// <returns>A move generator instance.</returns>
-    IMoveGenerator CreateGenerator(MoveType moveType);
+    IMoveGenerator CreateGenerator(GameStrategy moveType);
 
     /// <summary>
     /// Gets all supported move generation strategies.
     /// </summary>
     /// <returns>A collection of supported move types.</returns>
-    IEnumerable<MoveType> GetSupportedMoveTypes();
+    IEnumerable<GameStrategy> GetSupportedMoveTypes();
 } 

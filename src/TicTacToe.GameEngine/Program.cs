@@ -1,60 +1,65 @@
+using System.Text.Json.Serialization;
 using FastEndpoints;
-using FastEndpoints.Swagger;
+using FastEndpoints.Swagger; // Use the native swagger generator
 using TicTacToe.GameEngine.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.AddServiceDefaults();
 
-// Load engine-specific configuration files
+// 1. Aspire and Configuration
+builder.AddServiceDefaults();
 builder.Configuration
     .SetBasePath(builder.Environment.ContentRootPath)
     .AddJsonFile("engine.appsettings.json", optional: false, reloadOnChange: true)
     .AddJsonFile($"engine.appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
     .AddEnvironmentVariables();
 
-// FastEndpoints registration
+// 2. Core Frameworks: FastEndpoints & Swagger
 builder.Services.AddFastEndpoints();
-builder.Services.SwaggerDocument();
-
-// FastEndpoints registration
-builder.Services.AddFastEndpoints();
-builder.Services.SwaggerDocument();
-
-// Add services to the container
-builder.Services.AddSingleton<IGameRepository, InMemoryGameRepository>();
-
-// Add CORS for cross-origin requests
-builder.Services.AddCors(options =>
+builder.Services.SwaggerDocument(o =>
 {
-    options.AddDefaultPolicy(policy =>
+    o.DocumentSettings = s =>
     {
-        policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader();
-    });
+        s.DocumentName = "gameengine-v1"; // Unique document name
+        s.Title = "GameEngine API"; // Correct title
+        s.Version = "v1";
+        s.Description = "API for TicTacToe game engine operations.";
+    };
 });
 
-// Add health checks
+// 3. Application-Specific Services
+builder.Services.AddSingleton<IGameRepository, InMemoryGameRepository>();
 builder.Services.AddHealthChecks();
+
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline
+// --- Middleware Pipeline ---
+
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
 }
-
-app.UseCors();
-
-// FastEndpoints
-app.UseFastEndpoints();
-app.UseSwaggerGen();
-
 app.UseHttpsRedirection();
-app.MapDefaultEndpoints();
+
+// Use the consistent, working pattern for the UI
+app.UseOpenApi();
+app.UseSwaggerUi(c =>
+{
+    c.DocumentPath = "/swagger/gameengine-v1/swagger.json"; // Point to this service's doc
+    c.DefaultModelsExpandDepth = -1;
+    c.DocExpansion = "list";
+});
+
+app.UseFastEndpoints(c =>
+{
+    c.Serializer.Options.Converters.Add(new JsonStringEnumConverter());
+});
+
+app.MapDefaultEndpoints(); // For Aspire health checks
 
 app.Run();
 
 // Make Program accessible for testing
-public partial class Program { }
+namespace TicTacToe.GameEngine {
+    public partial class Program { }
+}

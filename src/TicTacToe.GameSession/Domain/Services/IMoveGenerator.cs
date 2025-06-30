@@ -1,6 +1,7 @@
 using TicTacToe.GameEngine.Domain.Entities;
 using TicTacToe.GameEngine.Domain.Enums;
 using TicTacToe.GameEngine.Domain.ValueObjects;
+using TicTacToe.Shared.Enums;
 
 namespace TicTacToe.GameSession.Domain.Services;
 
@@ -20,5 +21,5 @@ public interface IMoveGenerator
     /// <summary>
     /// The type of move generation strategy.
     /// </summary>
-    MoveType Type { get; }
+    GameStrategy Type { get; }
 } 

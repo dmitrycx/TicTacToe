@@ -1,6 +1,7 @@
 using TicTacToe.GameEngine.Domain.Entities;
 using TicTacToe.GameEngine.Domain.Enums;
 using TicTacToe.GameEngine.Domain.ValueObjects;
+using TicTacToe.Shared.Enums;
 
 namespace TicTacToe.GameSession.Domain.Services;
 
@@ -45,7 +46,7 @@ public class RuleBasedMoveGenerator : IMoveGenerator
     /// <summary>
     /// The type of move generation strategy.
     /// </summary>
-    public MoveType Type => MoveType.RuleBased;
+    public GameStrategy Type => GameStrategy.RuleBased;
 
     /// <summary>
     /// Gets all available (empty) positions on the board.
@@ -54,7 +55,20 @@ public class RuleBasedMoveGenerator : IMoveGenerator
     /// <returns>A list of available positions.</returns>
     private static List<Position> GetAvailablePositions(Board board)
     {
-        // TODO:
-        return [];
+        var availablePositions = new List<Position>();
+        
+        for (var row = 0; row < 3; row++)
+        {
+            for (var column = 0; column < 3; column++)
+            {
+                var position = new Position(row, column);
+                if (board.IsPositionEmpty(position))
+                {
+                    availablePositions.Add(position);
+                }
+            }
+        }
+        
+        return availablePositions;
     }
 } 

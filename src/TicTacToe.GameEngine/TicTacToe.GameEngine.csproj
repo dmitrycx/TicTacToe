@@ -13,7 +13,7 @@
     <PackageReference Include="FastEndpoints" Version="6.2.0" />
     <PackageReference Include="FastEndpoints.Swagger" Version="6.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.2" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.1" />
+    <PackageReference Include="NSwag.AspNetCore" Version="14.4.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -24,6 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\TicTacToe.Shared\TicTacToe.Shared.csproj" />
     <ProjectReference Include="..\..\aspire\TicTacToe.ServiceDefaults\TicTacToe.ServiceDefaults.csproj" />
   </ItemGroup>
 

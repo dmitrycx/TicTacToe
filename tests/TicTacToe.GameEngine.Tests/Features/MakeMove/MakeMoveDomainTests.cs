@@ -7,6 +7,7 @@ using TicTacToe.GameEngine.Domain.Exceptions;
 using TicTacToe.GameEngine.Domain.ValueObjects;
 using TicTacToe.GameEngine.Persistence;
 using TicTacToe.GameEngine.Tests.TestHelpers;
+using TicTacToe.Shared.Enums;
 
 namespace TicTacToe.GameEngine.Tests.Features.MakeMove;
 
@@ -82,7 +83,7 @@ public class MakeMoveDomainTests
         // Act & Assert
         var action = () => game.MakeMove(position);
         action.Should().Throw<InvalidMoveException>()
-            .WithMessage("*Cell at position (0, 0) is already occupied*");
+            .WithMessage("*Position Position { Row = 0, Column = 0 } is already occupied*");
     }
 
     [Fact]

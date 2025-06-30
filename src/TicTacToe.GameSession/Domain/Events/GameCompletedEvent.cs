@@ -1,16 +1,14 @@
-using TicTacToe.GameEngine.Domain.Enums;
+using TicTacToe.Shared.Enums;
 
 namespace TicTacToe.GameSession.Domain.Events;
 
 /// <summary>
-/// Domain event raised when a game session is completed.
+/// Event raised when a game simulation is completed.
 /// </summary>
 public class GameCompletedEvent : IDomainEvent
 {
     public Guid SessionId { get; }
-
     public GameStatus Result { get; }
-
     public DateTime OccurredOn { get; }
 
     /// <summary>

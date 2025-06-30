@@ -1,4 +1,5 @@
 namespace TicTacToe.GameSession.Domain.Services;
+using TicTacToe.Shared.Enums;
 
 /// <summary>
 /// Factory for creating move generators based on the specified move type.
@@ -6,7 +7,7 @@ namespace TicTacToe.GameSession.Domain.Services;
 /// </summary>
 public class MoveGeneratorFactory : IMoveGeneratorFactory
 {
-    private readonly IReadOnlyDictionary<MoveType, IMoveGenerator> _generators;
+    private readonly IReadOnlyDictionary<GameStrategy, IMoveGenerator> _generators;
 
     /// <summary>
     /// Initializes a new instance of the MoveGeneratorFactory.
@@ -23,7 +24,7 @@ public class MoveGeneratorFactory : IMoveGeneratorFactory
     /// <param name="moveType">The type of move generator to create.</param>
     /// <returns>The move generator instance.</returns>
     /// <exception cref="ArgumentException">Thrown when the move type is not supported.</exception>
-    public IMoveGenerator CreateGenerator(MoveType moveType)
+    public IMoveGenerator CreateGenerator(GameStrategy moveType)
     {
         if (_generators.TryGetValue(moveType, out var generator))
         {
@@ -37,7 +38,7 @@ public class MoveGeneratorFactory : IMoveGeneratorFactory
     /// Gets all supported move types.
     /// </summary>
     /// <returns>Collection of supported move types.</returns>
-    public IEnumerable<MoveType> GetSupportedMoveTypes()
+    public IEnumerable<GameStrategy> GetSupportedMoveTypes()
     {
         return _generators.Keys;
     }

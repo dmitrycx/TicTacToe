@@ -1,0 +1,15 @@
+{
+  "name": "tictactoe-microservices",
+  "version": "1.0.0",
+  "description": "Tic Tac Toe Microservices with .NET Aspire",
+  "scripts": {
+    "test:containers": "./test-containers-local.sh",
+    "test:containers:ci": "./test-containers-ci-local.sh",
+    "test:frontend": "./test-frontend-local.sh",
+    "test:all": "npm run test:containers:ci && npm run test:frontend",
+    "build:containers": "./build-local-containers.sh"
+  },
+  "keywords": ["microservices", "aspire", "dotnet", "nextjs"],
+  "author": "Your Name",
+  "license": "MIT"
+} 

@@ -1,8 +1,9 @@
 using TicTacToe.GameEngine.Domain.Enums;
 using TicTacToe.GameEngine.Domain.ValueObjects;
-using TicTacToe.GameEngine.Domain.Entities;
 using TicTacToe.GameSession.Domain.Constants;
 using TicTacToe.GameSession.Endpoints;
+using TicTacToe.Shared.Enums;
+using TicTacToe.GameEngine.Domain.Entities;
 
 namespace TicTacToe.GameSession.Domain.Aggregates;
 
@@ -14,6 +15,7 @@ public class GameSession
 {
     private readonly List<Move> _moves = new();
     private readonly List<IDomainEvent> _domainEvents = new();
+    private readonly List<Guid> _gameIds = new();
 
     /// <summary>
     /// Unique identifier for the session.
@@ -21,14 +23,24 @@ public class GameSession
     public Guid Id { get; private set; }
     
     /// <summary>
-    /// Identifier of the game in the Game Engine Service.
+    /// List of all game IDs in this session.
     /// </summary>
-    public Guid GameId { get; private set; }
+    public IReadOnlyCollection<Guid> GameIds => _gameIds.AsReadOnly();
+    
+    /// <summary>
+    /// Current active game ID.
+    /// </summary>
+    public Guid CurrentGameId { get; private set; }
     
     /// <summary>
     /// Current status of the session.
     /// </summary>
     public SessionStatus Status { get; private set; }
+    
+    /// <summary>
+    /// Strategy used for this session.
+    /// </summary>
+    public GameStrategy Strategy { get; private set; }
     
     /// <summary>
     /// When the session was created.
@@ -73,6 +85,7 @@ public class GameSession
         var session = new GameSession();
         session.Id = Guid.NewGuid();
         session.Status = SessionStatus.Created;
+        session.Strategy = GameStrategy.Random; // Default strategy
         session.CreatedAt = DateTime.UtcNow;
         
         session._domainEvents.Add(new SessionCreatedEvent(session.Id, Guid.Empty));
@@ -86,11 +99,68 @@ public class GameSession
     public GameSession(Guid gameId)
     {
         Id = Guid.NewGuid();
-        GameId = gameId;
+        _gameIds.Add(gameId);
+        CurrentGameId = gameId;
         Status = SessionStatus.Created;
+        Strategy = GameStrategy.Random; // Default strategy
         CreatedAt = DateTime.UtcNow;
         
-        _domainEvents.Add(new SessionCreatedEvent(Id, GameId));
+        _domainEvents.Add(new SessionCreatedEvent(Id, CurrentGameId));
+    }
+
+    /// <summary>
+    /// Creates a new game session with a specific strategy.
+    /// </summary>
+    /// <param name="strategy">The strategy to use for this session.</param>
+    public static GameSession Create(GameStrategy strategy)
+    {
+        var session = new GameSession();
+        session.Id = Guid.NewGuid();
+        session.Status = SessionStatus.Created;
+        session.Strategy = strategy;
+        session.CreatedAt = DateTime.UtcNow;
+        
+        session._domainEvents.Add(new SessionCreatedEvent(session.Id, Guid.Empty));
+        return session;
+    }
+
+    /// <summary>
+    /// Sets the strategy for this session.
+    /// </summary>
+    /// <param name="strategy">The strategy to use.</param>
+    public void SetStrategy(GameStrategy strategy)
+    {
+        if (Status != SessionStatus.Created)
+        {
+            throw new InvalidSessionStateException("Cannot change strategy after session has started");
+        }
+        
+        Strategy = strategy;
+    }
+
+    /// <summary>
+    /// Starts a new game in this session.
+    /// </summary>
+    /// <param name="gameId">The new game ID.</param>
+    public void StartNewGame(Guid gameId)
+    {
+        if (Status == SessionStatus.InProgress)
+        {
+            throw new InvalidSessionStateException("Cannot start new game while current game is in progress");
+        }
+        
+        _gameIds.Add(gameId);
+        CurrentGameId = gameId;
+        Status = SessionStatus.Created;
+        StartedAt = DateTime.UtcNow;
+        
+        // Clear previous game data
+        _moves.Clear();
+        Result = null;
+        Winner = null;
+        CompletedAt = null;
+        
+        _domainEvents.Add(new SimulationStartedEvent(Id));
     }
 
     /// <summary>
@@ -99,12 +169,13 @@ public class GameSession
     /// <param name="gameId">The game ID.</param>
     public void SetGameId(Guid gameId)
     {
-        if (GameId != Guid.Empty)
+        if (CurrentGameId != Guid.Empty)
         {
             throw new InvalidSessionStateException(SessionConstants.ErrorMessages.GameIdAlreadySet);
         }
         
-        GameId = gameId;
+        _gameIds.Add(gameId);
+        CurrentGameId = gameId;
     }
 
     /// <summary>
@@ -135,7 +206,7 @@ public class GameSession
             throw new InvalidSessionStateException(string.Format(SessionConstants.ErrorMessages.CannotRecordMoves, Status));
         }
         
-        var move = new Move(Id, player, position, MoveType.Random, _moves.Count + 1);
+        var move = new Move(Id, player, position, GameStrategy.Random, _moves.Count + 1);
         _moves.Add(move);
         _domainEvents.Add(new MoveMadeEvent(Id, move));
     }
@@ -232,30 +303,45 @@ public class GameSession
     public async Task<List<MoveInfo>> SimulateAsync(
         IGameEngineApiClient gameEngineClient, 
         IMoveGenerator moveGenerator,
-        MoveType moveStrategy = MoveType.Random)
+        GameStrategy moveStrategy = GameStrategy.Random)
     {
-        if (Status != SessionStatus.Created)
+        if (Status == SessionStatus.InProgress)
         {
             throw new InvalidSessionStateException(string.Format(SessionConstants.ErrorMessages.CannotStartSimulation, Status));
         }
 
         try
         {
-            // Start simulation
-            StartSimulation();
-
             // Create game in Game Engine
             var createGameResponse = await gameEngineClient.CreateGameAsync();
-            SetGameId(createGameResponse.GameId);
+            
+            // Start new game in this session
+            StartNewGame(createGameResponse.GameId);
+            
+            // Start simulation to set status to InProgress
+            StartSimulation();
             
             // Simulate moves until game is complete
             var moves = new List<MoveInfo>();
             var currentPlayer = Player.X;
+            var moveCount = 0;
             
             while (Status == SessionStatus.InProgress)
             {
+                moveCount++;
+                
                 // Get current game state from Game Engine
-                var gameState = await gameEngineClient.GetGameStateAsync(GameId);
+                var gameState = await gameEngineClient.GetGameStateAsync(CurrentGameId);
+
+                // Defensive: break if game is already completed
+                if (gameState.Status == SessionConstants.Status.Completed || 
+                    gameState.Status == GameStatus.Win.ToString() || 
+                    gameState.Status == GameStatus.Draw.ToString())
+                {
+                    CompleteGame(gameState.Winner);
+                    break;
+                }
+                
                 var board = Board.FromStringRepresentation(gameState.Board);
                 
                 // Generate move using the selected strategy
@@ -263,15 +349,18 @@ public class GameSession
                 
                 // Make move in Game Engine
                 var moveRequest = new MakeMoveRequest(position.Row, position.Column);
-                gameState = await gameEngineClient.MakeMoveAsync(GameId, moveRequest);
+                
+                gameState = await gameEngineClient.MakeMoveAsync(CurrentGameId, moveRequest);
                 
                 // Record move in session
                 RecordMove(position, currentPlayer);
                 
                 moves.Add(new MoveInfo(position.Row, position.Column, currentPlayer.ToString()));
 
-                // Check if game is complete
-                if (gameState.Status == SessionConstants.Status.Completed)
+                // Check if game is complete and update session status immediately
+                if (gameState.Status == SessionConstants.Status.Completed || 
+                    gameState.Status == GameStatus.Win.ToString() || 
+                    gameState.Status == GameStatus.Draw.ToString())
                 {
                     CompleteGame(gameState.Winner);
                     break;
@@ -283,11 +372,23 @@ public class GameSession
 
             return moves;
         }
-        catch (Exception)
+        catch (HttpRequestException ex)
         {
             // Handle any errors during simulation
             FailSimulation();
-            throw;
+            throw new InvalidOperationException($"HTTP communication failed during simulation: {ex.Message}", ex);
+        }
+        catch (InvalidOperationException ex)
+        {
+            // Handle any errors during simulation
+            FailSimulation();
+            throw new InvalidOperationException($"Invalid operation during simulation: {ex.Message}", ex);
+        }
+        catch (Exception ex)
+        {
+            // Handle any errors during simulation
+            FailSimulation();
+            throw new InvalidOperationException($"Simulation failed: {ex.Message}", ex);
         }
     }
 
