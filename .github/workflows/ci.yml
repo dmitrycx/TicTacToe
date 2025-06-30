@@ -87,7 +87,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.200'
+          dotnet-version: '9.0.301'
 
       # STEP 3: Configure Node.js environment for frontend
       - name: Setup Node.js
@@ -200,7 +200,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.200'
+          dotnet-version: '9.0.301'
 
       # STEP 5: Setup Node.js for frontend tests
       - name: Setup Node.js
