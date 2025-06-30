@@ -12,7 +12,7 @@ RUN npm install
 
 # Copy the rest of the WebUI source code
 COPY src/TicTacToe.WebUI/ ./
-RUN npm run build
+RUN npm run build:docker
 
 # 2. Production Stage
 FROM node:20-alpine AS runner

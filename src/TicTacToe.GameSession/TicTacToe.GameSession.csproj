@@ -13,7 +13,7 @@
     <PackageReference Include="FastEndpoints" Version="6.2.0" />
     <PackageReference Include="FastEndpoints.Swagger" Version="6.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.2" />
-    <PackageReference Include="Microsoft.Extensions.Http.Polly" Version="9.0.6" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.2" />
     <PackageReference Include="NSwag.AspNetCore" Version="14.4.0" />
   </ItemGroup>
 
@@ -28,6 +28,11 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </Content>
+  </ItemGroup>
+
+  <!-- Test Configuration -->
+  <ItemGroup Condition="'$(Configuration)' == 'Debug'">
+    <DefineConstants Include="USE_INMEMORY_REPOSITORY" />
   </ItemGroup>
 
 </Project>
