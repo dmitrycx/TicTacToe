@@ -3,6 +3,7 @@ using FastEndpoints;
 using FastEndpoints.Swagger; // Use the native swagger generator
 using TicTacToe.GameSession.Hubs;
 using TicTacToe.GameSession.Services;
+using TicTacToe.GameSession.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,8 +27,18 @@ builder.Services.SwaggerDocument(o =>
     };
 });
 
-// 3. Application-Specific Services
-builder.Services.AddSignalR();
+// 3. Repository Configuration - In-Memory Only
+builder.Services.AddSingleton<IGameSessionRepository, InMemoryGameSessionRepository>();
+
+// 4. Application-Specific Services
+builder.Services.AddSignalR(hubOptions =>
+{
+    hubOptions.EnableDetailedErrors = true;
+    hubOptions.ClientTimeoutInterval = TimeSpan.FromSeconds(30);
+    hubOptions.KeepAliveInterval = TimeSpan.FromSeconds(15);
+    hubOptions.MaximumReceiveMessageSize = 1024 * 1024; // 1MB
+});
+
 builder.Services.AddHealthChecks();
 
 var allowedOrigins = builder.Configuration["AllowedCorsOrigins"]?.Split(';') ?? [];
@@ -68,7 +79,6 @@ builder.Services.AddCors(options =>
     });
 });
 
-builder.Services.AddSingleton<IGameSessionRepository, InMemoryGameSessionRepository>();
 builder.Services.AddSingleton<IMoveGenerator, RandomMoveGenerator>();
 builder.Services.AddSingleton<IMoveGenerator, RuleBasedMoveGenerator>();
 builder.Services.AddSingleton<IMoveGenerator, AIMoveGenerator>();
@@ -123,7 +133,10 @@ app.UseFastEndpoints(c =>
     c.Serializer.Options.Converters.Add(new JsonStringEnumConverter());
 });
 
-app.MapHub<GameHub>("/gameHub").RequireCors("DevelopmentPolicy");
+// Map SignalR hub with CORS policy for WebSocket proxy support
+app.MapHub<GameHub>("/gamehub")
+   .RequireCors("DevelopmentPolicy");
+
 app.MapDefaultEndpoints(); // For Aspire health checks
 
 app.Run();

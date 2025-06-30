@@ -26,10 +26,10 @@ builder.Services.SwaggerDocument(o =>
     };
 });
 
-// 3. Application-Specific Services
+// 3. Repository Configuration - In-Memory Only
 builder.Services.AddSingleton<IGameRepository, InMemoryGameRepository>();
-builder.Services.AddHealthChecks();
 
+builder.Services.AddHealthChecks();
 
 var app = builder.Build();
 

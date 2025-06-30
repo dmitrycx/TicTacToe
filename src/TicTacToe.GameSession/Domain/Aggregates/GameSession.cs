@@ -392,6 +392,52 @@ public class GameSession
         }
     }
 
-    // Private constructor for EF Core
-    private GameSession() { }
+    /// <summary>
+    /// Adds a game ID to the session.
+    /// </summary>
+    /// <param name="gameId">The game ID to add.</param>
+    public void AddGameId(Guid gameId)
+    {
+        if (!_gameIds.Contains(gameId))
+        {
+            _gameIds.Add(gameId);
+        }
+    }
+
+    /// <summary>
+    /// Sets the session properties from database record (for repository mapping).
+    /// </summary>
+    /// <param name="id">The session ID.</param>
+    /// <param name="currentGameId">The current game ID.</param>
+    /// <param name="status">The session status.</param>
+    /// <param name="strategy">The game strategy.</param>
+    /// <param name="createdAt">When the session was created.</param>
+    /// <param name="startedAt">When the session started.</param>
+    /// <param name="completedAt">When the session completed.</param>
+    /// <param name="result">The game result.</param>
+    /// <param name="winner">The winner.</param>
+    public void SetProperties(
+        Guid id,
+        Guid currentGameId,
+        SessionStatus status,
+        GameStrategy strategy,
+        DateTime createdAt,
+        DateTime? startedAt,
+        DateTime? completedAt,
+        GameStatus? result,
+        string? winner)
+    {
+        Id = id;
+        CurrentGameId = currentGameId;
+        Status = status;
+        Strategy = strategy;
+        CreatedAt = createdAt;
+        StartedAt = startedAt;
+        CompletedAt = completedAt;
+        Result = result;
+        Winner = winner;
+    }
+
+    // Public parameterless constructor for repository mapping
+    public GameSession() { }
 } 

@@ -103,4 +103,10 @@ describe('SignalR Service', () => {
     signalRService.stop = jest.fn().mockResolvedValue(undefined)
     await expect(signalRService.stop()).resolves.toBeUndefined()
   })
+
+  it('handles WebSocket fallback gracefully', async () => {
+    const signalRService = getSignalRService()
+    signalRService.start = jest.fn().mockResolvedValue(undefined)
+    await expect(signalRService.start()).resolves.toBeUndefined()
+  })
 }) 

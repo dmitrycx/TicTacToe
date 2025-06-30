@@ -129,4 +129,32 @@ public class Game
 
         return true;
     }
+
+    /// <summary>
+    /// Sets the game properties from database record (for repository mapping).
+    /// </summary>
+    /// <param name="id">The game ID.</param>
+    /// <param name="board">The game board.</param>
+    /// <param name="currentPlayer">The current player.</param>
+    /// <param name="status">The game status.</param>
+    /// <param name="winner">The winner.</param>
+    /// <param name="createdAt">When the game was created.</param>
+    /// <param name="lastMoveAt">When the last move was made.</param>
+    public void SetProperties(
+        Guid id,
+        Board board,
+        Player currentPlayer,
+        GameStatus status,
+        Player? winner,
+        DateTime createdAt,
+        DateTime? lastMoveAt)
+    {
+        Id = id;
+        Board = board;
+        CurrentPlayer = currentPlayer;
+        Status = status;
+        Winner = winner;
+        CreatedAt = createdAt;
+        LastMoveAt = lastMoveAt;
+    }
 } 
