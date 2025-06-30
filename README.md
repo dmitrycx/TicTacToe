@@ -320,7 +320,25 @@ TicTacToe/
 
 ## 🧪 Testing
 
-The project includes comprehensive testing across all layers:
+The project includes comprehensive testing across all layers with multiple testing approaches:
+
+### Quick Local Testing (Recommended)
+
+**Test everything locally before pushing to avoid CI failures:**
+
+```bash
+# Test backend (unit + integration, excluding containers)
+dotnet test --filter "Category!=ContainerIntegration"
+
+# Test frontend (unit + E2E, CI-like environment)
+./test-frontend-local.sh
+
+# Test containers locally (full integration)
+./test-containers-local.sh
+
+# Test everything (backend + frontend + containers)
+npm run test:all
+```
 
 ### Backend Testing
 
@@ -361,6 +379,9 @@ npm test
 # Unit tests with coverage
 npm run test:coverage
 
+# CI-like testing (matches GitHub Actions environment)
+npm run test:ci
+
 # Run E2E tests (basic UI rendering test that doesn't require backend)
 npm run test:e2e
 
@@ -369,6 +390,9 @@ npm run test:e2e:ui
 
 # E2E tests in headed mode (see browser)
 npm run test:e2e:headed
+
+# E2E tests in CI mode (headless, list reporter)
+npm run test:e2e:ci
 ```
 
 ### Testing Strategy
@@ -378,6 +402,35 @@ The project uses a **three-tier testing approach**:
 1. **Unit Tests** - Fast, isolated testing of individual components and services
 2. **Integration Tests** - API integration testing with mocked dependencies
 3. **E2E Tests** - Full user journey testing in real browsers
+
+### Local Testing Scripts
+
+**`./test-frontend-local.sh`** - Mirrors CI environment:
+- Installs dependencies with `npm ci`
+- Installs Playwright browsers
+- Runs unit tests with coverage
+- Runs E2E tests in headless mode
+
+**`./test-containers-local.sh`** - Full container integration:
+- Builds and starts containers
+- Runs container integration tests
+- Validates real HTTP communication between services
+
+**`npm run test:all`** - Complete test suite:
+- Backend unit and integration tests
+- Frontend unit and E2E tests
+- Container integration tests
+
+### CI/CD Testing
+
+The GitHub Actions pipeline runs:
+1. **Unit Tests Job** - Fast feedback with backend and frontend unit tests
+2. **Integration Tests Job** - Builds containers and runs full integration tests
+
+**To avoid CI failures:**
+- Run `./test-frontend-local.sh` before pushing frontend changes
+- Run `./test-containers-local.sh` before pushing backend changes
+- Use `npm run test:ci` to test frontend in CI-like environment
 
 For detailed frontend testing information, see [`src/TicTacToe.WebUI/TESTING.md`](src/TicTacToe.WebUI/TESTING.md).
 

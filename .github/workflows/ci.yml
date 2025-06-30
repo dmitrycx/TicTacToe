@@ -330,6 +330,9 @@ jobs:
         run: |
           cd src/TicTacToe.WebUI
           
+          # Install dependencies first (including @playwright/test)
+          npm ci
+          
           # Install Playwright browsers
           npx playwright install --with-deps chromium
           
