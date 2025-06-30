@@ -441,6 +441,30 @@ The GitHub Actions pipeline runs:
 - Run `./test-containers-ci-local.sh` to catch CI timing issues locally
 - Use `npm run test:ci` to test frontend in CI-like environment
 
+### Manual CI Pipeline Execution
+
+The CI pipeline can be **manually triggered** from the GitHub Actions tab with configurable options:
+
+**Access:** Go to `Actions` → `.NET + Next.js CI` → `Run workflow`
+
+**Available Options:**
+- **Run full pipeline** (default: `true`) - Includes integration tests and E2E tests
+
+**Use Cases:**
+- **Testing pipeline changes** before merging to main
+- **Running tests on demand** without code changes
+- **Debugging pipeline issues** in production environment
+- **Faster feedback** by skipping integration tests during development
+
+**Example Workflows:**
+```bash
+# Quick validation (unit tests only)
+Run workflow → Run full pipeline: false
+
+# Full validation (everything)
+Run workflow → Run full pipeline: true
+```
+
 ### Troubleshooting CI Issues
 
 **Common CI Failures and Local Solutions:**

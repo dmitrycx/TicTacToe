@@ -57,6 +57,13 @@ on:
       - 'package-lock.json'
       - '.github/workflows/ci.yml'
       - 'Dockerfile*'
+  workflow_dispatch:
+    inputs:
+      run_full_pipeline:
+        description: 'Run full pipeline (including integration tests)'
+        required: false
+        default: true
+        type: boolean
 
 jobs:
   # JOB 1: Fast feedback with unit tests only (backend + frontend)
@@ -183,8 +190,11 @@ jobs:
         uses: trufflesecurity/trufflehog@main
         with:
           path: .
-          base: ${{ github.event.pull_request.base.sha || github.sha }}
-          head: ${{ github.sha }}
+          # For PRs: compare against the base branch
+          # For pushes: compare against the previous commit
+          base: ${{ github.event.pull_request.base.sha || github.event.before }}
+          head: ${{ github.event.pull_request.head.sha || github.sha }}
+
 
       # STEP 4: Setup .NET environment for integration tests
       - name: Setup .NET
@@ -274,6 +284,7 @@ jobs:
       # --- Integration Test Stage (against live containers) ---
       # STEP 14: Run backend integration tests against live containers
       - name: Run backend integration tests against containers
+        if: inputs.run_full_pipeline
         run: |
           # 1. Create a docker-compose file to orchestrate our services for the test run.
           # This is the CI equivalent of what your Aspire AppHost does for local dev.
@@ -327,6 +338,7 @@ jobs:
 
       # STEP 15: Run frontend E2E tests
       - name: Run frontend E2E tests
+        if: inputs.run_full_pipeline
         run: |
           cd src/TicTacToe.WebUI
           
@@ -343,14 +355,14 @@ jobs:
 
       # STEP 16: Stop containers (cleanup)
       - name: Stop containers
-        if: always() # This step runs even if the tests fail
+        if: always() && inputs.run_full_pipeline # This step runs even if the tests fail, but only if we ran the full pipeline
         run: |
           docker compose -f docker-compose.ci.yml down
 
       # --- Reporting Stage ---
       # STEP 17: Publish test results to pull request interface
       - name: Publish Test Results
-        if: always()
+        if: always() && inputs.run_full_pipeline
         uses: dorny/test-reporter@v1
         with:
           name: Integration Test Results
@@ -366,5 +378,5 @@ jobs:
           path: |
             ./test-results/
             trivy-*-results.sarif
-            docker-compose.ci.yml
+            ${{ inputs.run_full_pipeline && 'docker-compose.ci.yml' || '' }}
           retention-days: 7 
