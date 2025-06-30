@@ -449,25 +449,20 @@ The CI pipeline can be **manually triggered** from the GitHub Actions tab with c
 
 **Available Options:**
 - **Run full pipeline** (default: `true`) - Includes integration tests and E2E tests
-- **Skip security scans** (default: `false`) - Skips TruffleHog and Trivy scans for faster execution
 
 **Use Cases:**
 - **Testing pipeline changes** before merging to main
 - **Running tests on demand** without code changes
 - **Debugging pipeline issues** in production environment
-- **Manual security scans** when needed
 - **Faster feedback** by skipping integration tests during development
 
 **Example Workflows:**
 ```bash
 # Quick validation (unit tests only)
-Run workflow → Skip security scans: true, Run full pipeline: false
+Run workflow → Run full pipeline: false
 
 # Full validation (everything)
-Run workflow → Skip security scans: false, Run full pipeline: true
-
-# Security scan only
-Run workflow → Skip security scans: false, Run full pipeline: false
+Run workflow → Run full pipeline: true
 ```
 
 ### Troubleshooting CI Issues

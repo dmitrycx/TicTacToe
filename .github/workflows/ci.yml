@@ -64,11 +64,6 @@ on:
         required: false
         default: true
         type: boolean
-      skip_security_scans:
-        description: 'Skip security scans (TruffleHog, Trivy)'
-        required: false
-        default: false
-        type: boolean
 
 jobs:
   # JOB 1: Fast feedback with unit tests only (backend + frontend)
@@ -180,7 +175,7 @@ jobs:
       # STEP 2: Security validation - scan for vulnerable dependencies
       - name: Dependency Review
         uses: actions/dependency-review-action@v4
-        if: github.event_name == 'pull_request' && !inputs.skip_security_scans # Only run on PRs and when not skipping security scans
+        if: github.event_name == 'pull_request' # Only run on PRs
         with:
           # Reduce output size to prevent GitHub Actions step summary limit (1024k)
           fail-on-severity: moderate  # Only fail on moderate+ vulnerabilities
@@ -193,7 +188,6 @@ jobs:
       # STEP 3: Secrets detection - scan for hardcoded secrets and credentials
       - name: Run TruffleHog
         uses: trufflesecurity/trufflehog@main
-        if: !inputs.skip_security_scans
         with:
           path: .
           # For PRs: compare against the base branch
@@ -255,7 +249,6 @@ jobs:
       # STEP 10: Run Trivy to scan GameEngine image
       - name: Run Trivy to scan GameEngine image
         uses: aquasecurity/trivy-action@master
-        if: !inputs.skip_security_scans
         with:
           image-ref: 'tictactoe-gameengine:ci' # Scan the image artifact
           format: 'sarif'
@@ -265,7 +258,6 @@ jobs:
       # STEP 11: Run Trivy to scan GameSession image
       - name: Run Trivy to scan GameSession image
         uses: aquasecurity/trivy-action@master
-        if: !inputs.skip_security_scans
         with:
           image-ref: 'tictactoe-gamesession:ci' # Scan the image artifact
           format: 'sarif'
@@ -275,7 +267,6 @@ jobs:
       # STEP 12: Run Trivy to scan WebUI image
       - name: Run Trivy to scan WebUI image
         uses: aquasecurity/trivy-action@master
-        if: !inputs.skip_security_scans
         with:
           image-ref: 'tictactoe-webui:ci' # Scan the image artifact
           format: 'sarif'
@@ -285,7 +276,7 @@ jobs:
       # STEP 13: Upload Trivy scan results to GitHub Security tab
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
-        if: always() && !inputs.skip_security_scans
+        if: always()
         with:
           # The action will find and upload all .sarif files in the root directory
           sarif_file: .
@@ -386,6 +377,6 @@ jobs:
           name: integration-test-and-coverage-results
           path: |
             ./test-results/
-            ${{ !inputs.skip_security_scans && 'trivy-*-results.sarif' || '' }}
+            trivy-*-results.sarif
             ${{ inputs.run_full_pipeline && 'docker-compose.ci.yml' || '' }}
           retention-days: 7 
