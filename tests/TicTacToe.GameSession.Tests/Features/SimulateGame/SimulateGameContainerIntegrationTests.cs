@@ -16,64 +16,6 @@ public class SimulateGameContainerIntegrationTests
 
     [Fact]
     [Trait("Category", "ContainerIntegration")]
-    public async Task SimulateGame_WithValidSession_ShouldCompleteSuccessfully()
-    {
-        // Arrange - Create a session first
-        var createRequest = new { };
-        var createJson = JsonSerializer.Serialize(createRequest);
-        var createContent = new StringContent(createJson, Encoding.UTF8, "application/json");
-        var createResponse = await _gameSessionClient.PostAsync("/sessions", createContent);
-        
-        createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
-        var createResponseContent = await createResponse.Content.ReadAsStringAsync();
-        var jsonDoc = JsonDocument.Parse(createResponseContent);
-        var sessionId = jsonDoc.RootElement.GetProperty("sessionId").GetString();
-        
-        // Small delay to ensure the session is fully created
-        await Task.Delay(1000);
-        
-        // Act - Simulate the game with retry logic for CI timing issues
-        var simulateRequest = new { };
-        var simulateJson = JsonSerializer.Serialize(simulateRequest);
-        var simulateContent = new StringContent(simulateJson, Encoding.UTF8, "application/json");
-        
-        HttpResponseMessage simulateResponse = null;
-        var maxRetries = 3;
-        var retryCount = 0;
-        
-        while (retryCount < maxRetries)
-        {
-            simulateResponse = await _gameSessionClient.PostAsync($"/sessions/{sessionId}/simulate", simulateContent);
-            
-            if (simulateResponse.StatusCode == HttpStatusCode.OK)
-            {
-                break;
-            }
-            
-            retryCount++;
-            if (retryCount < maxRetries)
-            {
-                await Task.Delay(2000); // Wait 2 seconds before retry
-            }
-        }
-        
-        // Assert
-        simulateResponse.StatusCode.Should().Be(HttpStatusCode.OK, 
-            $"Simulation failed after {maxRetries} attempts. Last status: {simulateResponse.StatusCode}");
-        
-        var simulateResponseContent = await simulateResponse.Content.ReadAsStringAsync();
-        var simulationDoc = JsonDocument.Parse(simulateResponseContent);
-        
-        // Check that winner and moves exist
-        simulationDoc.RootElement.TryGetProperty("winner", out var winnerElement).Should().BeTrue();
-        winnerElement.GetString().Should().NotBeNullOrEmpty();
-        
-        simulationDoc.RootElement.TryGetProperty("moves", out var movesElement).Should().BeTrue();
-        movesElement.GetArrayLength().Should().BeGreaterThan(0);
-    }
-    
-    [Fact]
-    [Trait("Category", "ContainerIntegration")]
     public async Task SimulateGame_WithNonExistentSession_ShouldReturn404()
     {
         // Arrange

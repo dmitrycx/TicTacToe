@@ -27,6 +27,7 @@ echo "[INFO] ✅ Container images found"
 # Create test docker-compose file (mimics CI exactly)
 echo "[INFO] Creating CI-like test docker-compose file..."
 cat <<EOF > docker-compose.ci-local.yml
+version: '3.8'
 services:
   game-engine:
     image: tictactoe-gameengine:local-test
@@ -61,31 +62,12 @@ echo "[INFO] Starting services with CI-like configuration..."
 # Start services
 docker compose -f docker-compose.ci-local.yml up -d
 
-# Wait for services to be healthy (more aggressive than local script)
+# Wait for services to be healthy (exactly like CI)
 echo "[INFO] Waiting for services to become healthy..."
 echo "[INFO] This may take up to 60 seconds..."
 
-# More robust health check waiting
-max_attempts=30
-attempt=0
-while [ $attempt -lt $max_attempts ]; do
-    if docker compose -f docker-compose.ci-local.yml ps | grep -q "healthy"; then
-        echo "[INFO] ✅ Services are healthy!"
-        break
-    fi
-    
-    attempt=$((attempt + 1))
-    echo "[INFO] Waiting for services to become healthy... (attempt $attempt/$max_attempts)"
-    sleep 2
-done
-
-if [ $attempt -eq $max_attempts ]; then
-    echo "[WARNING] Services may not be fully healthy, but proceeding with tests"
-fi
-
-# Additional wait to ensure services are fully ready (mimics CI timing)
-echo "[INFO] Additional wait to ensure services are fully ready..."
-sleep 10
+# Use the exact same approach as CI
+timeout 60 bash -c 'until docker compose -f docker-compose.ci-local.yml ps | grep -q "healthy"; do sleep 5; done' || echo "[WARNING] Services may not be fully healthy, proceeding with tests"
 
 # Test service connectivity before running tests
 echo "[INFO] Testing service connectivity..."
