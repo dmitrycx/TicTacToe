@@ -5,7 +5,6 @@ EXPOSE 8082
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 COPY ["src/TicTacToe.ApiGateway/TicTacToe.ApiGateway.csproj", "src/TicTacToe.ApiGateway/"]
-COPY ["src/TicTacToe.ServiceDefaults/TicTacToe.ServiceDefaults.csproj", "src/TicTacToe.ServiceDefaults/"]
 RUN dotnet restore "src/TicTacToe.ApiGateway/TicTacToe.ApiGateway.csproj"
 COPY . .
 WORKDIR "/src/src/TicTacToe.ApiGateway"

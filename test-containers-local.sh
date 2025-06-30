@@ -34,12 +34,17 @@ print_status "Checking if container images exist..."
 
 if ! docker image inspect tictactoe-gameengine:local-test > /dev/null 2>&1; then
     print_warning "GameEngine container not found. Building..."
-    docker build -f GameEngine.Dockerfile -t tictactoe-gameengine:local-test .
+    docker buildx build -f GameEngine.Dockerfile -t tictactoe-gameengine:local-test --load .
 fi
 
 if ! docker image inspect tictactoe-gamesession:local-test > /dev/null 2>&1; then
     print_warning "GameSession container not found. Building..."
-    docker build -f GameSession.Dockerfile -t tictactoe-gamesession:local-test .
+    docker buildx build -f GameSession.Dockerfile -t tictactoe-gamesession:local-test --load .
+fi
+
+if ! docker image inspect tictactoe-apigateway:local-test > /dev/null 2>&1; then
+    print_warning "ApiGateway container not found. Building..."
+    docker buildx build -f ApiGateway.Dockerfile -t tictactoe-apigateway:local-test --load .
 fi
 
 # Create docker-compose file for testing
@@ -74,15 +79,24 @@ services:
     depends_on:
       game-engine:
         condition: service_healthy
+  api-gateway:
+    image: tictactoe-apigateway:local-test
+    ports:
+      - "8082:8082"
+    depends_on:
+      game-engine:
+        condition: service_healthy
+      game-session:
+        condition: service_healthy
 EOF
 
 # Start services
 print_status "Starting services..."
-docker compose -f docker-compose.test.yml up -d
+docker-compose -f docker-compose.test.yml up -d
 
 # Wait for services to be healthy
 print_status "Waiting for services to become healthy..."
-timeout 60 bash -c 'until docker compose -f docker-compose.test.yml ps | grep -q "healthy"; do sleep 5; echo "Waiting for services..."; done' || {
+timeout 60 bash -c 'until docker-compose -f docker-compose.test.yml ps | grep -q "healthy"; do sleep 5; echo "Waiting for services..."; done' || {
     print_warning "Services may not be fully healthy, proceeding with tests"
 }
 
@@ -98,7 +112,7 @@ TEST_RESULT=$?
 
 # Stop services
 print_status "Stopping services..."
-docker compose -f docker-compose.test.yml down
+docker-compose -f docker-compose.test.yml down
 
 # Clean up
 rm -f docker-compose.test.yml

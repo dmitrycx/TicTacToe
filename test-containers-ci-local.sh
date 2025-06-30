@@ -22,6 +22,12 @@ if ! docker image inspect tictactoe-gamesession:local-test >/dev/null 2>&1; then
     exit 1
 fi
 
+if ! docker image inspect tictactoe-apigateway:local-test >/dev/null 2>&1; then
+    echo "[ERROR] Container image tictactoe-apigateway:local-test not found!"
+    echo "[INFO] Run ./build-local-containers.sh first"
+    exit 1
+fi
+
 echo "[INFO] ✅ Container images found"
 
 # Create test docker-compose file (mimics CI exactly)
@@ -55,6 +61,15 @@ services:
     depends_on:
       game-engine:
         condition: service_healthy
+  api-gateway:
+    image: tictactoe-apigateway:local-test
+    ports:
+      - "8082:8082"
+    depends_on:
+      game-engine:
+        condition: service_healthy
+      game-session:
+        condition: service_healthy
 EOF
 
 echo "[INFO] Starting services with CI-like configuration..."
@@ -80,6 +95,12 @@ fi
 if ! curl -f http://localhost:8081/alive >/dev/null 2>&1; then
     echo "[ERROR] GameSession service is not responding on port 8081"
     docker compose -f docker-compose.ci-local.yml logs game-session
+    exit 1
+fi
+
+if ! curl -f http://localhost:8082/health >/dev/null 2>&1; then
+    echo "[ERROR] ApiGateway service is not responding on port 8082"
+    docker compose -f docker-compose.ci-local.yml logs api-gateway
     exit 1
 fi
 

@@ -13,18 +13,19 @@
   <ItemGroup>
     <PackageReference Include="Aspire.Hosting.AppHost" Version="9.3.1" />
     <PackageReference Include="Aspire.Hosting.NodeJs" Version="9.3.1" />
-    <PackageReference Include="Aspire.Hosting" Version="9.0.0-preview.1.24081.5" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.0-preview.1.24080.9" />
+    <PackageReference Include="Aspire.Hosting" Version="9.3.1" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.4" />
     <PackageReference Include="Yarp.ReverseProxy" Version="2.1.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\TicTacToe.GameEngine\TicTacToe.GameEngine.csproj" />
     <ProjectReference Include="..\..\src\TicTacToe.GameSession\TicTacToe.GameSession.csproj" />
+    <ProjectReference Include="..\..\src\TicTacToe.ApiGateway\TicTacToe.ApiGateway.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\TicTacToe.ServiceDefaults\TicTacToe.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\TicTacToe.ServiceDefaults\TicTacToe.ServiceDefaults.csproj" IsAspireProjectResource="false" />
   </ItemGroup>
 
 </Project>

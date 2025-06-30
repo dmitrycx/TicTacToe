@@ -6,19 +6,19 @@ echo "Building TicTacToe containers for local testing..."
 
 # Build GameEngine
 echo "Building GameEngine container..."
-docker build -f GameEngine.Dockerfile -t tictactoe-gameengine:local-test .
+docker buildx build -f GameEngine.Dockerfile -t tictactoe-gameengine:local-test --load .
 
 # Build GameSession
 echo "Building GameSession container..."
-docker build -f GameSession.Dockerfile -t tictactoe-gamesession:local-test .
+docker buildx build -f GameSession.Dockerfile -t tictactoe-gamesession:local-test --load .
 
 # Build API Gateway
 echo "Building API Gateway container..."
-docker build -f ApiGateway.Dockerfile -t tictactoe-apigateway:local-test .
+docker buildx build -f ApiGateway.Dockerfile -t tictactoe-apigateway:local-test --load .
 
 # Build WebUI
 echo "Building WebUI container..."
-docker build -f WebUI.Dockerfile -t tictactoe-webui:local-test .
+docker buildx build -f WebUI.Dockerfile -t tictactoe-webui:local-test --load .
 
 echo "All containers built successfully!"
 echo ""

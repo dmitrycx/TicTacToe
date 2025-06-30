@@ -1,7 +1,7 @@
 # Tic Tac Toe - Distributed Microservices Architecture
 
 [![CI Pipeline](https://img.shields.io/github/actions/workflow/status/dmitrycx/TicTacToe/ci.yml?branch=main&style=for-the-badge)](https://github.com/dmitrycx/TicTacToe/actions)
-[![.NET Version](https://img.shields.io/badge/.NET-9.0.200-blue?style=for-the-badge)](https://dotnet.microsoft.com/)
+[![.NET Version](https://img.shields.io/badge/.NET-9.0.301-blue?style=for-the-badge)](https://dotnet.microsoft.com/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=for-the-badge)](LICENSE)
 
 A production-ready demonstration of modern microservices architecture, featuring automated Tic Tac Toe gameplay with real-time visualization. Built with .NET 9, Next.js 15, and orchestrated by .NET Aspire.
@@ -166,7 +166,7 @@ graph LR
 
 ### Prerequisites
 
-- **.NET SDK 9.0.200** (see `global.json`)
+- **.NET SDK 9.0.301** (see `global.json`)
 - **Docker Desktop** (for containerized development)
 - **Node.js 18+** (for Next.js frontend)
 - **Git** (for version control)
@@ -187,7 +187,8 @@ graph LR
    
    This will start:
    - **GameEngine** service (.NET project with hot reload)
-   - **GameSession** service (.NET project with hot reload)  
+   - **GameSession** service (.NET project with hot reload)
+   - **ApiGateway** (YARP reverse proxy, orchestrated by Aspire)
    - **Next.js UI** (dev server with hot reload)
    - **Aspire Dashboard** (monitoring and orchestration)
 
@@ -225,6 +226,7 @@ graph LR
 # Build all service images
 docker build -f GameEngine.Dockerfile -t tictactoe-gameengine:local-test .
 docker build -f GameSession.Dockerfile -t tictactoe-gamesession:local-test .
+docker build -f ApiGateway.Dockerfile -t tictactoe-apigateway:local-test .
 docker build -f WebUI.Dockerfile -t tictactoe-webui:local-test .
 ```
 
@@ -318,6 +320,7 @@ TicTacToe/
 │   └── TicTacToe.WebUI/tests/      # Frontend tests (unit, integration, E2E)
 ├── GameEngine.Dockerfile           # GameEngine container definition
 ├── GameSession.Dockerfile          # GameSession container definition
+├── ApiGateway.Dockerfile           # ApiGateway container definition
 ├── WebUI.Dockerfile                # Next.js production container
 └── README.md                       # This file
 ```
@@ -511,6 +514,7 @@ npm run test:all  # Runs everything in CI-like conditions
 # Build production images
 docker build -f GameEngine.Dockerfile -t tictactoe-gameengine:latest .
 docker build -f GameSession.Dockerfile -t tictactoe-gamesession:latest .
+docker build -f ApiGateway.Dockerfile -t tictactoe-apigateway:latest .
 docker build -f WebUI.Dockerfile -t tictactoe-webui:latest .
 ```
 
