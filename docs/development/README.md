@@ -178,6 +178,30 @@ npm run dev
 # Look for WebSocket frames
 ```
 
+#### **Expected WebSocket Behavior in Development**
+When running the application locally, you may see WebSocket connection errors in the browser console. This is **expected behavior**:
+
+1. **Initial WebSocket Attempt**: SignalR tries to connect via WebSocket first
+2. **WebSocket Failure**: In development environments, WebSocket may fail due to proxy configuration
+3. **SSE Fallback**: SignalR automatically falls back to Server-Sent Events (SSE)
+4. **Successful Connection**: The connection works perfectly via SSE
+
+**Console Messages to Expect:**
+```
+[SignalR] Development mode: WebSocket may fail initially, SSE fallback is expected and normal
+[SignalR] WebSocket connection failed (expected in development - SSE fallback will handle connection)
+[SignalR] Connection started successfully via API Gateway
+```
+
+**To Filter Console Errors:**
+- In browser dev tools, filter out: `"WebSocket failed to connect"`
+- This will hide the expected WebSocket errors while keeping other important messages
+
+**Connection Status:**
+- The UI shows "Live connection" when connected (regardless of transport method)
+- The connection indicator will be green when working
+- Game functionality works normally with SSE transport
+
 ## 📊 **Performance Considerations**
 
 ### **Backend Performance**

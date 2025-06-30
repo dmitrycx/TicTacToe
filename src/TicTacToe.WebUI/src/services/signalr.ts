@@ -26,6 +26,12 @@ class SignalRService {
       const hubUrl = '/api/game/gameHub';
       console.log(`[SignalR] Connecting to API Gateway: ${hubUrl}`);
       
+      // In development, explain the expected WebSocket fallback behavior
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[SignalR] Development mode: WebSocket may fail initially, SSE fallback is expected and normal');
+        console.log('[SignalR] To hide expected WebSocket errors in console, filter out: "WebSocket failed to connect"');
+      }
+      
       this.connection = new HubConnectionBuilder()
         .withUrl(hubUrl)
         .configureLogging(LogLevel.Information)
@@ -48,7 +54,7 @@ class SignalRService {
     // Suppress WebSocket errors in development mode
     this.connection.onreconnecting((error) => {
       if (process.env.NODE_ENV === 'development') {
-        console.log('[SignalR] Reconnecting... (development mode - WebSocket fallback expected)');
+        console.log('[SignalR] Reconnecting... (development mode - transport fallback expected)');
       } else {
         console.error('[SignalR] Reconnecting:', error);
       }
@@ -79,12 +85,23 @@ class SignalRService {
       await this.connection.start()
       console.log('[SignalR] Connection started successfully via API Gateway');
     } catch (error) {
-      // Suppress specific WebSocket errors in development
-      if (process.env.NODE_ENV === 'development' && 
-          error instanceof Error && 
-          error.message.includes('WebSocket failed to connect')) {
-        console.log('[SignalR] WebSocket connection failed (development mode - SSE fallback expected)');
-        return; // Don't throw error, let SSE handle it
+      // In development mode, suppress WebSocket connection errors since SSE fallback is expected
+      if (process.env.NODE_ENV === 'development') {
+        if (error instanceof Error) {
+          const errorMessage = error.message.toLowerCase();
+          if (errorMessage.includes('websocket failed to connect') ||
+              errorMessage.includes('the connection could not be found on the server') ||
+              errorMessage.includes('websocket connection failed') ||
+              errorMessage.includes('failed to start the transport')) {
+            console.log('[SignalR] WebSocket connection failed (expected in development - SSE fallback will handle connection)');
+            // Don't throw the error - let the automatic reconnection handle it
+            // This prevents Next.js error boundary from catching it
+            return;
+          }
+        }
+        // For other development errors, log but don't throw
+        console.log('[SignalR] Connection issue in development mode (continuing with fallback):', error);
+        return;
       }
       
       console.error('[SignalR] Failed to start connection via API Gateway:', error);

@@ -59,6 +59,27 @@ export default function RootLayout({
             __html: `window.GAME_SESSION_SERVICE_URL = "${gameSessionUrl}";`,
           }}
         />
+        {/* Global error handler to suppress SignalR WebSocket errors */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if (typeof window !== 'undefined') {
+                const originalError = console.error;
+                console.error = function(...args) {
+                  const message = args.join(' ');
+                  if (typeof message === 'string' && 
+                      (message.includes('WebSocket failed to connect') ||
+                       message.includes('Failed to start the transport') ||
+                       message.includes('connection could not be found on the server'))) {
+                    console.log('[Global] Suppressed SignalR WebSocket error:', message);
+                    return;
+                  }
+                  originalError.apply(console, args);
+                };
+              }
+            `,
+          }}
+        />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}

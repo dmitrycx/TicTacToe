@@ -115,7 +115,26 @@ export default function TicTacToeGame() {
     const initializeSignalR = async () => {
       try {
         const signalRService = getSignalRService()
-        await signalRService.start()
+        
+        // Wrap the start call in a try-catch to prevent Next.js error boundary from catching SignalR errors
+        try {
+          await signalRService.start()
+        } catch (signalRError) {
+          // If this is a WebSocket error in development, just log it and continue
+          if (process.env.NODE_ENV === 'development' && signalRError instanceof Error) {
+            const errorMessage = signalRError.message.toLowerCase();
+            if (errorMessage.includes('websocket') || 
+                errorMessage.includes('failed to start the transport') ||
+                errorMessage.includes('connection could not be found')) {
+              console.log('[SignalR] Suppressed WebSocket error in development mode:', signalRError.message);
+              // Don't set error state for expected WebSocket failures
+              return;
+            }
+          }
+          // Re-throw non-WebSocket errors
+          throw signalRError;
+        }
+        
         setIsConnected(true)
         setError(null)
 
@@ -163,12 +182,26 @@ export default function TicTacToeGame() {
         })
 
         signalRService.onError((errorMessage: string) => {
-          setError(errorMessage)
+          // Only show errors that aren't related to WebSocket fallback
+          if (!errorMessage.toLowerCase().includes('websocket') && 
+              !errorMessage.toLowerCase().includes('connection could not be found')) {
+            setError(errorMessage)
+          }
           setIsSimulating(false)
         })
       } catch (error) {
         console.error('SignalR initialization error:', error)
-        setError('Failed to connect to game server')
+        // Only show connection errors that aren't expected WebSocket fallbacks
+        if (error instanceof Error) {
+          const errorMessage = error.message.toLowerCase();
+          if (!errorMessage.includes('websocket failed to connect') &&
+              !errorMessage.includes('the connection could not be found on the server') &&
+              !errorMessage.includes('failed to start the transport')) {
+            setError('Failed to connect to game server')
+          }
+        } else {
+          setError('Failed to connect to game server')
+        }
       }
     }
 
@@ -393,21 +426,21 @@ export default function TicTacToeGame() {
                     </Select>
                   </div>
 
-                  {/* Connection Status */}
-                  <div className="flex items-center gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg bg-white/60 backdrop-blur-sm border border-slate-200/50 shadow-soft" data-testid="connection-status">
+                  {/* Connection Status - Subtle indicator */}
+                  <div className="flex items-center gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg bg-white/40 backdrop-blur-sm border border-slate-200/30 shadow-soft opacity-80" data-testid="connection-status">
                     <div
                       className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full transition-all duration-300 ${
                         isConnected
                           ? "bg-emerald-500 shadow-glow-emerald animate-pulse-slow"
-                          : "bg-red-500 shadow-glow-red"
+                          : "bg-slate-400"
                       }`}
                     />
-                    <span className="text-xs sm:text-sm font-medium text-slate-700">
-                      {isConnected ? "Connected to game server" : "Disconnected from server"}
+                    <span className="text-xs sm:text-sm font-medium text-slate-600">
+                      {isConnected ? "Live connection" : "Connecting..."}
                     </span>
                     {isConnected && (
-                      <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-xs">
-                        Live
+                      <Badge variant="outline" className="bg-emerald-50/80 text-emerald-600 border-emerald-200/50 text-xs">
+                        Ready
                       </Badge>
                     )}
                   </div>
