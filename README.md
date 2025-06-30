@@ -1,7 +1,7 @@
 # Tic Tac Toe - Distributed Microservices Architecture
 
 [![CI Pipeline](https://img.shields.io/github/actions/workflow/status/dmitrycx/TicTacToe/ci.yml?branch=main&style=for-the-badge)](https://github.com/dmitrycx/TicTacToe/actions)
-[![.NET Version](https://img.shields.io/badge/.NET-9.0.200-blue?style=for-the-badge)](https://dotnet.microsoft.com/)
+[![.NET Version](https://img.shields.io/badge/.NET-9.0.301-blue?style=for-the-badge)](https://dotnet.microsoft.com/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=for-the-badge)](LICENSE)
 
 A production-ready demonstration of modern microservices architecture, featuring automated Tic Tac Toe gameplay with real-time visualization. Built with .NET 9, Next.js 15, and orchestrated by .NET Aspire.
@@ -27,8 +27,8 @@ graph TB
         UI[Next.js UI<br/>React + TypeScript]
     end
 
-    subgraph "API Gateway / BFF"
-        BFF[Next.js Server<br/>Backend for Frontend<br/>+ API Proxy Routes]
+    subgraph "API Gateway Layer"
+        YARP[YARP API Gateway<br/>Reverse Proxy + WebSocket]
     end
 
     subgraph "Microservices Layer"
@@ -40,15 +40,16 @@ graph TB
         SR[SignalR Hub<br/>Real-time Updates]
     end
 
-    UI -->|HTTP API Calls| BFF
-    UI -->|WebSocket via Proxy| SR
-    BFF -->|HTTP Proxy| GS
-    BFF -->|HTTP Proxy| GE
+    UI -->|HTTP API Calls| YARP
+    UI -->|WebSocket| YARP
+    YARP -->|HTTP Proxy| GS
+    YARP -->|HTTP Proxy| GE
+    YARP -->|WebSocket Proxy| SR
     GS -->|HTTP| GE
     GS -->|Events| SR
 
     style UI fill:#61DAFB
-    style BFF fill:#333,color:#fff
+    style YARP fill:#FF6B35,color:#fff
     style GS fill:#512BD4,color:#fff
     style GE fill:#512BD4,color:#fff
     style SR fill:#FF6B35
@@ -58,6 +59,7 @@ graph TB
 
 | Service | Technology | Port | Responsibility |
 |---------|------------|------|----------------|
+| **YARP API Gateway** | .NET 9 + YARP | 8082 | Reverse proxy, WebSocket support, load balancing |
 | **GameEngine** | .NET 9 + FastEndpoints | 8080 | Core game logic, board state, move validation |
 | **GameSession** | .NET 9 + FastEndpoints + SignalR | 8081 | Session management, AI move orchestration |
 | **WebUI** | Next.js 15 + React + TypeScript | 3000 | User interface with real-time updates |
@@ -92,34 +94,38 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant UI as Next.js UI
-    participant BFF as Next.js BFF
+    participant YARP as YARP API Gateway
     participant GS as GameSession Service
     participant SR as SignalR Hub
     
-    UI->>BFF: GET /api/game/sessions
-    BFF->>GS: GET /sessions (proxied)
-    GS-->>BFF: Sessions list
-    BFF-->>UI: Sessions data
+    UI->>YARP: GET /api/game/sessions
+    YARP->>GS: GET /sessions (proxied)
+    GS-->>YARP: Sessions list
+    YARP-->>UI: Sessions data
     
-    UI->>BFF: Connect to /api/game/gameHub (proxied)
-    BFF->>SR: WebSocket connection
-    SR-->>BFF: Connection established
-    BFF-->>UI: Connection established
+    UI->>YARP: Connect to /api/game/gameHub (WebSocket)
+    YARP->>GS: WebSocket proxy to /gamehub
+    GS->>SR: SignalR connection established
+    SR-->>GS: Connection confirmed
+    GS-->>YARP: WebSocket connection established
+    YARP-->>UI: WebSocket connection established
     
-    UI->>BFF: POST /api/game/sessions/{id}/simulate
-    BFF->>GS: POST /sessions/{id}/simulate (proxied)
+    UI->>YARP: POST /api/game/sessions/{id}/simulate
+    YARP->>GS: POST /sessions/{id}/simulate (proxied)
     GS->>GS: Start simulation
     
     loop During simulation
         GS->>SR: Broadcast move update
-        SR->>BFF: Real-time move notification
-        BFF->>UI: Move notification (proxied)
+        SR->>GS: SignalR event
+        GS->>YARP: WebSocket message (proxied)
+        YARP->>UI: Real-time move notification
         UI->>UI: Update board display
     end
     
     GS->>SR: Broadcast game completion
-    SR->>BFF: Game end notification
-    BFF->>UI: Game end notification (proxied)
+    SR->>GS: SignalR event
+    GS->>YARP: WebSocket message (proxied)
+    YARP->>UI: Game end notification
 ```
 
 ### Data Flow Architecture
@@ -131,9 +137,8 @@ graph LR
         State[React State]
     end
     
-    subgraph "BFF Layer"
-        API[API Routes]
-        Cache[Response Cache]
+    subgraph "API Gateway Layer"
+        YARP[YARP Gateway]
     end
     
     subgraph "Service Layer"
@@ -147,15 +152,14 @@ graph LR
     end
     
     UI --> State
-    State --> API
-    API --> Cache
-    API --> GS
-    GS --> GE
+    State --> YARP
+    YARP --> GS
+    YARP --> GE
     GS --> SessionDB
     GE --> GameDB
     
     style UI fill:#61DAFB
-    style API fill:#333,color:#fff
+    style YARP fill:#FF6B35,color:#fff
     style GS fill:#512BD4,color:#fff
     style GE fill:#512BD4,color:#fff
     style SessionDB fill:#28a745
@@ -166,7 +170,7 @@ graph LR
 
 ### Prerequisites
 
-- **.NET SDK 9.0.200** (see `global.json`)
+- **.NET SDK 9.0.301** (see `global.json`)
 - **Docker Desktop** (for containerized development)
 - **Node.js 18+** (for Next.js frontend)
 - **Git** (for version control)
@@ -187,7 +191,8 @@ graph LR
    
    This will start:
    - **GameEngine** service (.NET project with hot reload)
-   - **GameSession** service (.NET project with hot reload)  
+   - **GameSession** service (.NET project with hot reload)
+   - **ApiGateway** (YARP reverse proxy, orchestrated by Aspire)
    - **Next.js UI** (dev server with hot reload)
    - **Aspire Dashboard** (monitoring and orchestration)
 
@@ -225,6 +230,7 @@ graph LR
 # Build all service images
 docker build -f GameEngine.Dockerfile -t tictactoe-gameengine:local-test .
 docker build -f GameSession.Dockerfile -t tictactoe-gamesession:local-test .
+docker build -f ApiGateway.Dockerfile -t tictactoe-apigateway:local-test .
 docker build -f WebUI.Dockerfile -t tictactoe-webui:local-test .
 ```
 
@@ -253,21 +259,25 @@ The project supports two development modes through .NET Aspire:
 
 ### API Proxy Architecture
 
-In **Container Mode**, the Next.js frontend uses API proxy routes to communicate with backend services:
+In **Container Mode**, the Next.js frontend uses the YARP API Gateway to communicate with backend services:
 
 ```
-Frontend (Next.js) → API Routes (/api/game/*) → Backend Services
+Frontend (Next.js) → YARP API Gateway → Backend Services
 ```
 
 This architecture:
 - **Eliminates CORS issues** in containerized environments
 - **Provides unified API endpoints** regardless of deployment mode
 - **Enables seamless switching** between development and container modes
-- **Maintains security** by proxying requests through the frontend server
+- **Maintains security** by proxying requests through the API Gateway
+- **Supports WebSocket connections** for real-time communication
 
-**Key Proxy Routes:**
+**Key Gateway Routes:**
 - `/api/game/sessions/*` - Session management endpoints
 - `/api/game/gameHub` - SignalR WebSocket proxy for real-time updates
+- `/api/game/engine/*` - GameEngine service endpoints
+
+**Note:** The YARP API Gateway provides production-grade reverse proxy capabilities with built-in WebSocket support, load balancing, and health checks.
 
 ## 🔧 Manual Service Setup (Legacy)
 
@@ -314,6 +324,7 @@ TicTacToe/
 │   └── TicTacToe.WebUI/tests/      # Frontend tests (unit, integration, E2E)
 ├── GameEngine.Dockerfile           # GameEngine container definition
 ├── GameSession.Dockerfile          # GameSession container definition
+├── ApiGateway.Dockerfile           # ApiGateway container definition
 ├── WebUI.Dockerfile                # Next.js production container
 └── README.md                       # This file
 ```
@@ -507,6 +518,7 @@ npm run test:all  # Runs everything in CI-like conditions
 # Build production images
 docker build -f GameEngine.Dockerfile -t tictactoe-gameengine:latest .
 docker build -f GameSession.Dockerfile -t tictactoe-gamesession:latest .
+docker build -f ApiGateway.Dockerfile -t tictactoe-apigateway:latest .
 docker build -f WebUI.Dockerfile -t tictactoe-webui:latest .
 ```
 

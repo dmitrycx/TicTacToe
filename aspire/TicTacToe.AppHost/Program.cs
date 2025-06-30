@@ -7,6 +7,7 @@ var useContainers = builder.Configuration["USE_CONTAINERS"] == "true" ||
 // --- Resource Declarations ---
 IResourceBuilder<IResourceWithEndpoints> gameEngine;
 IResourceBuilder<IResourceWithEndpoints> gameSession;
+IResourceBuilder<IResourceWithEndpoints> apiGateway;
 IResourceBuilder<IResourceWithEndpoints> nextJsApp;
 
 if (useContainers)
@@ -21,8 +22,14 @@ if (useContainers)
         .WithHttpEndpoint(targetPort: 8081, name: "http")
         .WithExternalHttpEndpoints();
 
+    apiGateway = builder.AddContainer("api-gateway", "tictactoe-apigateway:local-test")
+        .WithReference(gameSession.GetEndpoint("http"))
+        .WithReference(gameEngine.GetEndpoint("http"))
+        .WithHttpEndpoint(targetPort: 8082, name: "http")
+        .WithExternalHttpEndpoints();
+
     nextJsApp = builder.AddContainer("nextjs-ui", "tictactoe-webui:local-test")
-        .WithReference(gameSession.GetEndpoint("http")) // ONLY the reference is needed
+        .WithReference(apiGateway.GetEndpoint("http"))
         .WithHttpEndpoint(targetPort: 3000, env: "PORT")
         .WithExternalHttpEndpoints();
 }
@@ -36,8 +43,13 @@ else
         .WithReference(gameEngine.GetEndpoint("http"))
         .WithExternalHttpEndpoints();
 
-    nextJsApp = builder.AddNodeApp("nextjs-ui", "../../src/TicTacToe.WebUI/aspire-entry.js")
+    apiGateway = builder.AddProject<Projects.TicTacToe_ApiGateway>("api-gateway")
         .WithReference(gameSession.GetEndpoint("http"))
+        .WithReference(gameEngine.GetEndpoint("http"))
+        .WithExternalHttpEndpoints();
+
+    nextJsApp = builder.AddNodeApp("nextjs-ui", "../../src/TicTacToe.WebUI/aspire-entry.js")
+        .WithReference(apiGateway.GetEndpoint("http"))
         .WithHttpEndpoint(env: "PORT")
         .WithExternalHttpEndpoints();
 }

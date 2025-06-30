@@ -87,7 +87,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.200'
+          dotnet-version: '9.0.301'
 
       # STEP 3: Configure Node.js environment for frontend
       - name: Setup Node.js
@@ -200,7 +200,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.200'
+          dotnet-version: '9.0.301'
 
       # STEP 5: Setup Node.js for frontend tests
       - name: Setup Node.js
@@ -245,6 +245,16 @@ jobs:
           load: true
           push: false
 
+      # STEP 9.1: Build ApiGateway Docker image
+      - name: Build ApiGateway Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./ApiGateway.Dockerfile
+          tags: tictactoe-apigateway:ci
+          load: true
+          push: false
+
       # --- Security Scan Stage (on the built images) ---
       # STEP 10: Run Trivy to scan GameEngine image
       - name: Run Trivy to scan GameEngine image
@@ -271,6 +281,15 @@ jobs:
           image-ref: 'tictactoe-webui:ci' # Scan the image artifact
           format: 'sarif'
           output: 'trivy-webui-results.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      # STEP 12.1: Run Trivy to scan ApiGateway image
+      - name: Run Trivy to scan ApiGateway image
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'tictactoe-apigateway:ci'
+          format: 'sarif'
+          output: 'trivy-apigateway-results.sarif'
           severity: 'CRITICAL,HIGH'
 
       # STEP 13: Upload Trivy scan results to GitHub Security tab
@@ -318,6 +337,15 @@ jobs:
               depends_on:
                 game-engine:
                   condition: service_healthy
+            api-gateway:
+              image: tictactoe-apigateway:ci
+              ports:
+                - "8082:8082"
+              depends_on:
+                game-engine:
+                  condition: service_healthy
+                  game-session:
+                    condition: service_healthy
           EOF
 
           # 2. Start the services in the background
