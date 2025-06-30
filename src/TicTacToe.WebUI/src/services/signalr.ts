@@ -22,9 +22,9 @@ class SignalRService {
     }
 
     try {
-      // Use the proxy route that handles all environments
+      // Use the API Gateway for SignalR connections
       const hubUrl = '/api/game/gameHub';
-      console.log(`[SignalR] Connecting to proxy: ${hubUrl}`);
+      console.log(`[SignalR] Connecting to API Gateway: ${hubUrl}`);
       
       this.connection = new HubConnectionBuilder()
         .withUrl(hubUrl)
@@ -77,7 +77,7 @@ class SignalRService {
 
     try {
       await this.connection.start()
-      console.log('[SignalR] Connection started successfully via proxy');
+      console.log('[SignalR] Connection started successfully via API Gateway');
     } catch (error) {
       // Suppress specific WebSocket errors in development
       if (process.env.NODE_ENV === 'development' && 
@@ -87,7 +87,7 @@ class SignalRService {
         return; // Don't throw error, let SSE handle it
       }
       
-      console.error('[SignalR] Failed to start connection via proxy:', error);
+      console.error('[SignalR] Failed to start connection via API Gateway:', error);
       throw error
     }
   }
