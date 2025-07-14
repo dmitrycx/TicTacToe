@@ -30,6 +30,9 @@ Welcome to the TicTacToe project documentation. This hub organizes all documenta
 - **[Testing Scripts](../scripts/testing/)** - Test automation scripts
 - **[Development Scripts](../scripts/development/)** - Development workflow scripts
 
+### **🗺️ Roadmap & Future Improvements**
+- **[Project Roadmap & Future Improvements](roadmap/future-improvements.md)** - Detailed, visual, and step-by-step plan for evolving the system
+
 ## 🎯 **Quick Navigation**
 
 ### **For New Developers**
